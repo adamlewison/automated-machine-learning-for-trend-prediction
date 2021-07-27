@@ -19,7 +19,7 @@ def check(f1,f2,f3,f4,f5):
   else:
     return False
   
-for a in range(130,430):
+for a in range(0,430):
   print("a:" , a)
   for b in range(0,430):
     for c in range(0,430):
