@@ -1,0 +1,6 @@
+dataclasses==0.8
+numpy==1.19.5
+Pillow==8.3.1
+torch==1.9.0
+torchvision==0.10.0
+typing-extensions==3.10.0.0
