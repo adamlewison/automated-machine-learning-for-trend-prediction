@@ -37,7 +37,7 @@ def main():
     T = jse[0:4]
 
     print('dont end')
-    segs = sliding_window(jse[0:50])
+    segs = sliding_window(jse)
     print(segs)
 
 if __name__ == '__main__':
