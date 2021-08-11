@@ -1,4 +1,10 @@
+import math
+
+import pandas as pd
 from scipy import stats as sp
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+from statsmodels.graphics.regressionplots import abline_plot
 
 class TrendLine:
 
@@ -7,7 +13,10 @@ class TrendLine:
         self.slope = slope
 
     def __str__(self):
-        return f" <{self.length}, {self.slope}>"
+        return f"<{self.length}, {self.slope}>"
+
+    def __repr__(self):
+        return f"<{self.length}, {round(self.slope,2)}>"
 
 class StraightLine:
 
@@ -20,6 +29,22 @@ class StraightLine:
 
     @classmethod
     def regress(cls, T):
+        motif = pd.DataFrame(data = {'close': T.values, 'days': (T.index - T.index[0]).days.values})
+        line = cls()
+        x = (T.index - T.index[0]).days.values
+        x = sm.add_constant(x)
+        y = T.values
+        model = sm.OLS(y, x).fit()
+        """
+        ax = motif.plot(x='days', y='close', kind='scatter')
+        abline_plot(model_results= model, ax=ax)
+        plt.show()
+        """
+        line.intercept, line.slope, line.error = model.params[0], model.params[1], math.sqrt(model.ssr)
+        return line
+
+    @classmethod
+    def regress1(cls, T):
         line = cls()
         x = (T.index - T.index[0]).days.values
         y = T.values

@@ -9,7 +9,7 @@ from helpers import TrendLine,StraightLine
 def timeseries(csv_file_name, value_col, index_col = 'Date', parse_dates = True):
     return pd.read_csv(Path().joinpath('data', csv_file_name + '.csv'), index_col= index_col, parse_dates = parse_dates)[value_col]
 
-def sliding_window(T, max_error = 20):
+def sliding_window(T, max_error = 100):
     arr = []
     anchor = 0
     while anchor < T.size:
@@ -20,19 +20,24 @@ def sliding_window(T, max_error = 20):
             i += 1
             previous_line = line
             line = StraightLine.regress(T[anchor: anchor + i])
-        arr.append(previous_line)
+        arr.append(TrendLine(previous_line.slope, (i - 1)))
         anchor += i
     return arr
 
 #%%
-
 jse = timeseries('jse-test', 'Close')
 T = jse[0:5]
-segs = sliding_window(jse[0:500])
+
 
 #%%
+
 def main():
-    print('hello')
+    jse = timeseries('jse-test', 'Close')
+    T = jse[0:4]
+
+    print('dont end')
+    segs = sliding_window(jse[0:50])
+    print(segs)
 
 if __name__ == '__main__':
     main()
