@@ -1,16 +1,40 @@
-# This is a sample Python script.
+import pandas as pd
+import numpy as np
+from pathlib import Path
+import matplotlib.pyplot as plt
+from sklearn import linear_model,metrics
+from scipy import stats as sp
+from helpers import TrendLine,StraightLine
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+def timeseries(csv_file_name, value_col, index_col = 'Date', parse_dates = True):
+    return pd.read_csv(Path().joinpath('data', csv_file_name + '.csv'), index_col= index_col, parse_dates = parse_dates)[value_col]
 
+def sliding_window(T, max_error = 20):
+    arr = []
+    anchor = 0
+    while anchor < T.size:
+        i = 2
+        line = StraightLine.regress(T[anchor : anchor + i])
+        previous_line = None
+        while line.error < max_error:
+            i += 1
+            previous_line = line
+            line = StraightLine.regress(T[anchor: anchor + i])
+        arr.append(previous_line)
+        anchor += i
+    return arr
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+#%%
 
+jse = timeseries('jse-test', 'Close')
+T = jse[0:5]
+segs = sliding_window(jse[0:500])
 
-# Press the green button in the gutter to run the script.
+#%%
+def main():
+    print('hello')
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    main()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
