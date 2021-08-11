@@ -22,6 +22,7 @@ def sliding_window(T, max_error = 100):
             line = StraightLine.regress(T[anchor: anchor + i])
         arr.append(TrendLine(previous_line.slope, (i - 1)))
         anchor += i
+    print("Line Segments Constructed.")
     return arr
 
 #%%
