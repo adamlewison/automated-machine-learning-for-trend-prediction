@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pandas as pd
 from scipy import stats as sp
 import statsmodels.api as sm
@@ -40,7 +41,7 @@ class StraightLine:
         abline_plot(model_results= model, ax=ax)
         plt.show()
         """
-        line.intercept, line.slope, line.error = model.params[0], model.params[1], math.sqrt(model.ssr)
+        line.intercept, line.slope, line.error = model.params[0], np.rad2deg(math.atan(model.params[1])), math.sqrt(model.ssr)
         return line
 
     @classmethod

@@ -15,8 +15,8 @@ def sliding_window(T, max_error = 100):
     while anchor < T.size:
         i = 2
         line = StraightLine.regress(T[anchor : anchor + i])
-        previous_line = None
-        while line.error < max_error:
+        previous_line = line
+        while line.error < max_error and (anchor + i) < T.size:
             i += 1
             previous_line = line
             line = StraightLine.regress(T[anchor: anchor + i])
@@ -35,8 +35,6 @@ T = jse[0:5]
 def main():
     jse = timeseries('jse-test', 'Close')
     T = jse[0:4]
-
-    print('dont end')
     segs = sliding_window(jse)
     print(segs)
 

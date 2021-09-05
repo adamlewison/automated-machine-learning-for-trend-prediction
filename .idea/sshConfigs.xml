@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="hpc.uct.ac.za" id="f2632206-4213-4014-b600-45ef709f05b9" port="22" nameFormat="DESCRIPTIVE" username="lwsada002" />
+    </configs>
+  </component>
+</project>
