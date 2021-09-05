@@ -41,7 +41,6 @@ from pymoo.algorithms.so_pattern_search import PatternSearch
 cuda_off = True
 dataset_name = "STX40"
 column_name = 'Close'
-algos = ['random','ga','cmaes']
 
 """## Helpers"""
 
@@ -297,7 +296,7 @@ def train(params):
     params = params_list_to_dict(params)
 
   start_time = time.time()
-  num_epochs = 40
+  num_epochs = 100
   learning_rate = 0.01
   optimizer_name = 'adam'
   
@@ -638,7 +637,7 @@ algos = ['random', 'ga', 'pattern', 'de']
 
 if 'random' in algos:
     tracker = PerformanceTracker('Random 1 - ' + dataset_name, pop_size = 1)
-    discrete_random_search(train, lower_bounds, upper_bounds, 180)
+    discrete_random_search(train, lower_bounds, upper_bounds, 225)
     tracker.export()
 
 if 'ga' in algos:
@@ -653,7 +652,7 @@ if 'ga' in algos:
     res = minimize(
         CASH(),
         ga,
-        termination=('n_gen', 20),
+        termination=('n_gen', 25),
         seed=1,
         save_history=True
     )
@@ -679,7 +678,7 @@ if 'pattern' in algos:
     )
     res = minimize(CASH(),
                    ps,
-                   ('n_iter', 4),
+                   ('n_iter', 5),
                    seed=1,
                    verbose=False)
     tracker.export()
@@ -694,7 +693,7 @@ if 'de' in algos:
     res = minimize(
         CASH(),
         de,
-        termination=('n_gen', 36),
+        termination=('n_gen', 45),
         seed=1,
         save_history=True
     )
