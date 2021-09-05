@@ -7,4 +7,5 @@
 #SBATCH --mail-user=lwsada002@myuct.ac.za
 #SBATCH --mail-type=BEGIN,END,FAIL
 
-source venv/bin/activate && python exp1.py
+source venv/bin/activate
+python exp1.py
