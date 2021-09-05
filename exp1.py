@@ -638,7 +638,7 @@ algos = ['random']
 
 if 'random' in algos:
     tracker = PerformanceTracker('Random 1 - ' + dataset_name, pop_size = 1)
-    discrete_random_searchs(train, lower_bounds, upper_bounds, 10)
+    discrete_random_search(train, lower_bounds, upper_bounds, 10)
     tracker.export()
 
 if 'ga' in algos:
