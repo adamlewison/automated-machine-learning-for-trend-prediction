@@ -1,0 +1,7 @@
+,Value
+best model,"{'model': 'mlp', 'learning_rate': 0.0001, 'dropout': 0.2, 'n_hidden': 2, 'hidden_1': 100, 'hidden_2': 100, 'hidden_3': 8, 'hidden_4': 88, 'hidden_5': 48}"
+val mse,2271.8515625
+test mse,8557.09
+total time,1594.4449727535248
+function calls,168
+iterations,3

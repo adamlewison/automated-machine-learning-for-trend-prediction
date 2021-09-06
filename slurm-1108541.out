@@ -1,0 +1,90 @@
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Not a float
+Params in: [1, 3, 3, 4, 47, 48, 6, 49, 41]
+{'model': 'mlp', 'learning_rate': 0.0001, 'dropout': 0.3, 'n_hidden': 4, 'hidden_1': 47, 'hidden_2': 48, 'hidden_3': 6, 'hidden_4': 49, 'hidden_5': 41} 160.48837280273438
+Params in: [0, 4, 9, 1, 10, 56, 74, 7, 96]
+{'model': 'lstm', 'learning_rate': 1e-05, 'dropout': 0.9, 'n_hidden': 1, 'hidden_1': 10, 'hidden_2': 56, 'hidden_3': 74, 'hidden_4': 7, 'hidden_5': 96} 171.10386657714844
+Params in: [1, 0, 2, 1, 74, 41, 47, 40, 51]
+{'model': 'mlp', 'learning_rate': 0.1, 'dropout': 0.2, 'n_hidden': 1, 'hidden_1': 74, 'hidden_2': 41, 'hidden_3': 47, 'hidden_4': 40, 'hidden_5': 51} 137.3873748779297
+Params in: [0, 2, 2, 5, 49, 88, 70, 21, 100]
+{'model': 'lstm', 'learning_rate': 0.001, 'dropout': 0.2, 'n_hidden': 5, 'hidden_1': 49, 'hidden_2': 88, 'hidden_3': 70, 'hidden_4': 21, 'hidden_5': 100} 152.68162536621094
+Params in: [1, 0, 6, 2, 48, 96, 89, 87, 25]
+{'model': 'mlp', 'learning_rate': 0.1, 'dropout': 0.6, 'n_hidden': 2, 'hidden_1': 48, 'hidden_2': 96, 'hidden_3': 89, 'hidden_4': 87, 'hidden_5': 25} 115.05497741699219
+Params in: [1, 3, 9, 2, 87, 81, 23, 38, 97]
+{'model': 'mlp', 'learning_rate': 0.0001, 'dropout': 0.9, 'n_hidden': 2, 'hidden_1': 87, 'hidden_2': 81, 'hidden_3': 23, 'hidden_4': 38, 'hidden_5': 97} 158.2571563720703
+Params in: [1, 3, 7, 4, 46, 29, 30, 15, 41]
+{'model': 'mlp', 'learning_rate': 0.0001, 'dropout': 0.7, 'n_hidden': 4, 'hidden_1': 46, 'hidden_2': 29, 'hidden_3': 30, 'hidden_4': 15, 'hidden_5': 41} 160.75648498535156
+Params in: [1, 4, 9, 4, 26, 28, 19, 51, 54]
+{'model': 'mlp', 'learning_rate': 1e-05, 'dropout': 0.9, 'n_hidden': 4, 'hidden_1': 26, 'hidden_2': 28, 'hidden_3': 19, 'hidden_4': 51, 'hidden_5': 54} 162.61764526367188
+Params in: [0, 2, 1, 4, 98, 76, 100, 15, 78]
+{'model': 'lstm', 'learning_rate': 0.001, 'dropout': 0.1, 'n_hidden': 4, 'hidden_1': 98, 'hidden_2': 76, 'hidden_3': 100, 'hidden_4': 15, 'hidden_5': 78} 161.23165893554688
+Params in: [1, 2, 4, 3, 33, 14, 63, 48, 56]
+{'model': 'mlp', 'learning_rate': 0.001, 'dropout': 0.4, 'n_hidden': 3, 'hidden_1': 33, 'hidden_2': 14, 'hidden_3': 63, 'hidden_4': 48, 'hidden_5': 56} 112.64900970458984
