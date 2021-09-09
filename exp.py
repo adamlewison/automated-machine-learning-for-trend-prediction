@@ -538,11 +538,11 @@ class PerformanceTracker:
             self.buffer_best_params = None
 
     def test_best_model(self):
-        '''
+
         predicted_s = []
         predicted_l = []
         mse_arr = []
-        for i in range(5):
+        for i in range(6):
             self.actual, predicted, mse = test(self.best_model)
             predicted_s.append(predicted[:, 0])
             predicted_l.append(predicted[:, 1])
@@ -559,14 +559,7 @@ class PerformanceTracker:
             'predicted_slope': avg_s,
             'predicted_length': avg_l
         })
-        '''
-        self.actual, self.predicted, self.best_model_test_mse = test(self.best_model)
-        self.test_results = pd.DataFrame(data={
-            'actual_slope': self.actual[:, 0],
-            'actual_length': self.actual[:, 1],
-            'predicted_slope': self.predicted[:, 0],
-            'predicted_length': self.predicted[:, 1]
-        })
+
         return self.test_results
 
     def summary(self):
@@ -665,7 +658,7 @@ def main():
         for a in algos:
             for i in range(iterations):
 
-                tracker_name = a + " " + d + " " + str(i)
+                tracker_name = a + " " + d + " " + str(i) + " V2"
                 budget = 450
 
                 if a == 'random':
