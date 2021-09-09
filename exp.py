@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -38,41 +40,46 @@ from pymoo.algorithms.so_pattern_search import PatternSearch
 
 #%%
 
-cuda_off = True
-dataset_name = "STX40"
-column_name = 'Close'
+
 
 """## Helpers"""
 
 def regress(T):
-  x = T.index.values
-  y = T.values
-  model = sm.OLS(y, sm.add_constant(x)).fit()
-  
-  return {
-      'intercept':  model.params[0],
-      'slope':      model.params[1],
-      'length':     x[-1] - x[0],
-      'error':      np.sqrt(model.ssr)
-  }
-  """
-  ax = motif.plot(x='days', y='close', kind='scatter')
-  abline_plot(model_results= model, ax=ax)
-  plt.show()
-  """
+    x = T.index.values
+    y = T.values
+    model = sm.OLS(y, sm.add_constant(x)).fit()
+
+    out = {}
+    if len(model.params) > 1:
+        out = {
+            'intercept': model.params[0],
+            'slope': model.params[1],
+            'length': x[-1] - x[0],
+            'error': np.sqrt(model.ssr)
+        }
+    else:
+        out = {
+            'intercept': model.params[0],
+            'slope': 9999,
+            'length': x[-1] - x[0],
+            'error': np.sqrt(model.ssr)
+        }
+
+    return out
 
 def sliding_window(T, max_error = 100, df = True):
     rows = []
     anchor = 0
     while anchor < T.size:
         i = 2
-        line = regress(T[anchor : anchor + i])
+        line = regress(T[anchor: anchor + i])
         previous_line = line
         while line['error'] < max_error and (anchor + i) < T.size:
             i += 1
             previous_line = line
             line = regress(T[anchor: anchor + i])
-        rows.append([previous_line['slope'], previous_line['length']])
+        if previous_line['slope'] != 9999:
+            rows.append([previous_line['slope'], previous_line['length']])
         anchor += i
     if df:
         return pd.DataFrame(rows, columns=['Slope', 'Length'])
@@ -130,74 +137,7 @@ def plot_trends(trends, y_0):
 #%%
 """# Data Preprocessing"""
 
-df = pd.read_csv("data/" + dataset_name + ".csv", parse_dates=['Date'])
-df.head()
 
-rows = []
-index = []
-
-for _, row in df.iterrows():
-    try:
-        x = float(row[column_name])
-        row_data = {
-            column_name: x
-        }
-        index.append((row.Date - df.Date[0]).days)
-        rows.append(row_data)
-    except:
-        print("Not a float")
-
-
-features_df = pd.DataFrame(rows, index = index)
-features_df.head()
-#%%
-#sax = features_df[column_name].plot()
-#plt.show()
-#%%
-
-# CONVERT TO TREND SEQUENCES
-features_df = sliding_window(features_df[column_name])
-features_df.head()
-
-train_size = int(len(features_df) * .6)
-val_size = int(len(features_df) * .2)
-test_size = int(len(features_df) * .2)
-
-train_df, val_df, test_df = features_df[:train_size], features_df[train_size + 1: train_size + 1 + val_size], features_df[train_size + val_size + 1:]
-train_df.shape, val_df.shape,  test_df.shape
-
-scaler = MinMaxScaler(feature_range= (-1,1))
-scaler = scaler.fit(train_df)
-
-train_df = pd.DataFrame(
-    train_df, #scaler.transform(train_df),
-    index = train_df.index,
-    columns = train_df.columns
-    )
-
-train_df.head()
-
-val_df = pd.DataFrame(
-    val_df, #scaler.transform(val_df),
-    index = val_df.index,
-    columns = val_df.columns
-    )
-
-val_df.head()
-
-test_df = pd.DataFrame(
-    test_df, #scaler.transform(test_df),
-    index = test_df.index,
-    columns = test_df.columns
-    )
-
-test_df.head()
-#%%
-SEQUENCE_LENGTH = 4
-target = ['Slope', 'Length']
-train_sequences = create_sequences(train_df, target, SEQUENCE_LENGTH)
-val_sequences = create_sequences(val_df, target, SEQUENCE_LENGTH)
-test_sequences = create_sequences(test_df, target, SEQUENCE_LENGTH)
 
 #%%
 """# Models
@@ -257,15 +197,86 @@ class LstmModel(nn.Module):
 #%%
 """# Training"""
 
-if cuda_off:
-    device = torch.device("cpu")
-else:
-    device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
 
 
-trainset = torch.utils.data.DataLoader(train_sequences, batch_size=64, shuffle = False)
-valset = torch.utils.data.DataLoader(val_sequences, batch_size=64, shuffle = False)
-testset = torch.utils.data.DataLoader(test_sequences, batch_size=64, shuffle = False)
+
+def get_data(filename, column_name = 'Close'):
+    df = pd.read_csv("data/" + filename + ".csv", parse_dates=['Date'])
+    df.head()
+
+    rows = []
+    index = []
+
+    for _, row in df.iterrows():
+        try:
+            x = float(row[column_name])
+            row_data = {
+                column_name: x
+            }
+            index.append((row.Date - df.Date[0]).days)
+            rows.append(row_data)
+        except:
+            print("Not a float")
+
+    features_df = pd.DataFrame(rows, index=index)
+    features_df.head()
+    # %%
+    # sax = features_df[column_name].plot()
+    # plt.show()
+    # %%
+
+    # CONVERT TO TREND SEQUENCES
+    features_df = sliding_window(features_df[column_name])
+    features_df.head()
+
+    train_size = int(len(features_df) * .6)
+    val_size = int(len(features_df) * .2)
+    test_size = int(len(features_df) * .2)
+
+    train_df, val_df, test_df = features_df[:train_size], features_df[
+                                                          train_size + 1: train_size + 1 + val_size], features_df[
+                                                                                                      train_size + val_size + 1:]
+    train_df.shape, val_df.shape, test_df.shape
+
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    scaler = scaler.fit(train_df)
+
+    train_df = pd.DataFrame(
+        train_df,  # scaler.transform(train_df),
+        index=train_df.index,
+        columns=train_df.columns
+    )
+
+    train_df.head()
+
+    val_df = pd.DataFrame(
+        val_df,  # scaler.transform(val_df),
+        index=val_df.index,
+        columns=val_df.columns
+    )
+
+    val_df.head()
+
+    test_df = pd.DataFrame(
+        test_df,  # scaler.transform(test_df),
+        index=test_df.index,
+        columns=test_df.columns
+    )
+
+    test_df.head()
+    # %%
+    SEQUENCE_LENGTH = 4
+    target = ['Slope', 'Length']
+    train_sequences = create_sequences(train_df, target, SEQUENCE_LENGTH)
+    val_sequences = create_sequences(val_df, target, SEQUENCE_LENGTH)
+    test_sequences = create_sequences(test_df, target, SEQUENCE_LENGTH)
+
+    trainset = torch.utils.data.DataLoader(train_sequences, batch_size=64, shuffle=False)
+    valset = torch.utils.data.DataLoader(val_sequences, batch_size=64, shuffle=False)
+    testset = torch.utils.data.DataLoader(test_sequences, batch_size=64, shuffle=False)
+
+    return trainset, valset, testset
+
 
 def build_model(params):
   if params['model'] == models[0]:
@@ -290,101 +301,83 @@ def build_model(params):
 
 """## Train Method"""
 
-def train(params):
+def train(params, model_only = False):
 
-  if isinstance(params,list):
-    params = params_list_to_dict(params)
+    if isinstance(params,list):
+      params = params_list_to_dict(params)
 
-  start_time = time.time()
-  num_epochs = 100
-  learning_rate = 0.01
-  optimizer_name = 'adam'
+    start_time = time.time()
+    num_epochs = 400
+    learning_rate = 0.01
+    optimizer_name = 'adam'
   
-  #if (params.get('num_epochs') != None):
-  #    num_epochs = params.get('num_epochs')
+    if (params.get('num_epochs') != None):
+        num_epochs = params.get('num_epochs')
 
-  if (params.get('learning_rate') != None):
-      learning_rate = params.get('learning_rate')
-  
-  #if (params.get('optimizer') != None):
-  #    optimizer_name = params.get('optimizer')
+    if (params.get('learning_rate') != None):
+        learning_rate = params.get('learning_rate')
 
-  model = build_model(params)
-  model.to(device)
+    model = build_model(params)
+    model.to(device)
 
-  criterion = torch.nn.MSELoss()    # mean-squared error for regression
-  
-  #if optimizer_name == 'adam':
-  #  optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-  #if optimizer_name == 'sgd':
-  #  optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-  optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-  
-  for epoch in range(num_epochs):
-    for data in trainset:
-    
-      X, y = data
-      X, y = X.to(device), y.to(device)
+    criterion = torch.nn.MSELoss()  # mean-squared error for regression
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    for epoch in range(num_epochs):
+        for data in trainset:
+            X, y = data
+            X, y = X.to(device), y.to(device)
+            optimizer.zero_grad()
+            output = model(X)
+            loss = criterion(output, y)
+            loss.backward()
+            optimizer.step()  # adjusts weights
 
-      optimizer.zero_grad()
-      output = model(X)
-      loss = criterion(output, y)
-      loss.backward()
-      optimizer.step() # adjusts weights
-    
-    if epoch % 50 == 0:
-      pass
-      #print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
+    if model_only:
+        return model
 
-  actual, predicted = [],[]
-  with torch.no_grad():
-    for data in valset:
-      X, y = data
-      X, y = X.to(device), y.to(device)
-    
-      for idx, i in enumerate(y):
-        actual.append(i)
-    
-      for idx, i in enumerate(model(X)):
-        predicted.append(i)
+    actual, predicted = [], []
+    with torch.no_grad():
+        for data in valset:
+            X, y = data
+            X, y = X.to(device), y.to(device)
 
-  actual, predicted = torch.stack(actual), torch.stack(predicted)
-  end_time = time.time()
-  mse = F.mse_loss(actual, predicted).cpu().item()
-  print(params, mse)
-  
-  if 'tracker' in globals():
-    if isinstance(tracker, PerformanceTracker):
-      tracker.add_row(start_time, end_time,mse,model,params)
+            for idx, i in enumerate(y):
+                actual.append(i)
 
-  return mse
+            for idx, i in enumerate(model(X)):
+                predicted.append(i)
+
+    actual, predicted = torch.stack(actual), torch.stack(predicted)
+    end_time = time.time()
+    mse = F.mse_loss(actual, predicted).cpu().item()
+
+    if 'tracker' in globals():
+        if isinstance(tracker, PerformanceTracker):
+            tracker.add_row(start_time, end_time, mse, model, params)
+    print(str(mse))
+    return mse
 
 """## Test Method"""
 
 def test(model):
+    model.to(device)
+    actual, predicted = [], []
 
-  model.to(device)
+    with torch.no_grad():
+        for data in testset:
+            X, y = data
+            X, y = X.to(device), y.to(device)
 
-  actual, predicted = [],[]
+            for idx, i in enumerate(y):
+                actual.append(i.cpu().numpy())
 
-  with torch.no_grad():
-    for data in testset:
-      X, y = data
-      X, y = X.to(device), y.to(device)
-    
-      for idx, i in enumerate(y):
-        actual.append(i.cpu().numpy())
-    
-      for idx, i in enumerate(model(X)):
-        predicted.append(i.cpu().numpy())
-  
-  actual = np.stack(actual)
-  predicted = np.stack(predicted)
+            for idx, i in enumerate(model(X)):
+                predicted.append(i.cpu().numpy())
 
-  #actual = scaler.inverse_transform(actual) if descale else actual
-  #predicted = scaler.inverse_transform(predicted) if descale else predicted
+    actual = np.stack(actual)
+    predicted = np.stack(predicted)
 
-  return actual, predicted, np.square(np.subtract(actual, predicted)).mean()
+    return actual, predicted, np.square(np.subtract(actual, predicted)).mean()
 
 #%%
 """# Combined Hyper-Parameter and Algorithm Selection
@@ -426,8 +419,6 @@ hidden_3 = np.arange(10,201)
 hidden_4 = np.arange(10,201)
 hidden_5 = np.arange(10,201)
 
-
-
 cnn_n_layers = [1,2,3]
 lstm_n_layers = [1,2,3]
 kernal_1 = [1,2,3]
@@ -447,8 +438,6 @@ params = {
     'hidden_4': hidden_4,
     'hidden_5': hidden_5,
 }
-
-params
 
 def params_list_to_dict(params):
   print("Params in:", params)
@@ -549,6 +538,28 @@ class PerformanceTracker:
             self.buffer_best_params = None
 
     def test_best_model(self):
+        '''
+        predicted_s = []
+        predicted_l = []
+        mse_arr = []
+        for i in range(5):
+            self.actual, predicted, mse = test(self.best_model)
+            predicted_s.append(predicted[:, 0])
+            predicted_l.append(predicted[:, 1])
+            mse_arr.append(mse)
+
+        predicted_s, predicted_l = np.stack(predicted_s), np.stack(predicted_l)
+
+        avg_s, avg_l = predicted_s.mean(axis = 0), predicted_l.mean(axis=0)
+        self.best_model_test_mse = np.array(mse_arr).mean()
+
+        self.test_results = pd.DataFrame(data={
+            'actual_slope': self.actual[:, 0],
+            'actual_length': self.actual[:, 1],
+            'predicted_slope': avg_s,
+            'predicted_length': avg_l
+        })
+        '''
         self.actual, self.predicted, self.best_model_test_mse = test(self.best_model)
         self.test_results = pd.DataFrame(data={
             'actual_slope': self.actual[:, 0],
@@ -558,7 +569,7 @@ class PerformanceTracker:
         })
         return self.test_results
 
-    def summary(self, ):
+    def summary(self):
         total_time = self.rows[-1]['end_time'] - self.rows[0]['start_time']
         idx = ['best model', 'val mse', 'test mse', 'total time', 'function calls', 'iterations']
         vals = [str(self.best_model_params), self.best_mse, self.best_model_test_mse, total_time,
@@ -596,7 +607,6 @@ class PerformanceTracker:
 
 
 #%%
-"""## Random Search"""
 
 def discrete_random_search(f, lower_bounds, upper_bounds, iterations = 10):
   D = len(lower_bounds)
@@ -626,79 +636,107 @@ class CASH(Problem):
           fs.append(train(params_list_to_dict(x[i])))
         out["F"] = np.array(fs)
 
-cmaes = CMAES(
-    sampling=get_sampling("int_random"),
-    eliminate_duplicates=True,
-)
 
-#%%
+## GLOBALS
+cuda_off = True
+dataset_name = "STX40"
+column_name = 'Close'
+trainset = None
+valset = None
+testset = None
+tracker = None
+device = None
 
-algos = ['random', 'ga', 'pattern', 'de']
+def main():
+    global trainset, valset, testset, tracker, device
+    if cuda_off:
+        device = torch.device("cpu")
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
 
-if 'random' in algos:
-    tracker = PerformanceTracker('Random 1 - ' + dataset_name, pop_size = 1)
-    discrete_random_search(train, lower_bounds, upper_bounds, 225)
-    tracker.export()
+    if True:
+        datasets = ['NYSE', 'NASDAQ', 'STX40', 'BARC']
+        algos = ['random', 'ga', 'ps', 'de']
 
-if 'ga' in algos:
-    tracker = PerformanceTracker('GA 1 - ' + dataset_name, pop_size=9)
-    ga = GA(
-        pop_size=9,
-        sampling=get_sampling("int_random"),
-        crossover=get_crossover("int_sbx", prob=1.0, eta=3.0),
-        mutation=get_mutation("int_pm", eta=3.0),
-        eliminate_duplicates=True,
-    )
-    res = minimize(
-        CASH(),
-        ga,
-        termination=('n_gen', 25),
-        seed=1,
-        save_history=True
-    )
-    print(f"Best solution found: \nX = {res.X}\nF = {res.F}\nCV= {res.CV}")
-    tracker.export()
+    iterations = 1
 
-if 'cmaes' in algos:
-    tracker = PerformanceTracker('CMAES 1 - ' + dataset_name, pop_size = 45)
-    res = minimize(CASH(),
-                   cmaes,
-                   ('n_iter', 1),
-                   seed=1,
-                   save_history=True
-                   )
-    print(f"Best solution found: \nX = {res.X}\nF = {res.F}\nCV= {res.CV}")
-    tracker.export()
+    for d in datasets:
+        trainset, valset, testset = get_data(d)
+        for a in algos:
+            for i in range(iterations):
 
-if 'pattern' in algos:
-    tracker = PerformanceTracker('PS 1 - ' + dataset_name, pop_size = 45)
-    ps = PatternSearch(
-        sampling=get_sampling("int_random"),
-        eliminate_duplicates=True,
-    )
-    res = minimize(CASH(),
-                   ps,
-                   ('n_iter', 5),
-                   seed=1,
-                   verbose=False)
-    tracker.export()
+                tracker_name = a + " " + d + " " + str(i)
+                budget = 450
 
-if 'de' in algos:
-    tracker = PerformanceTracker('DE 1 - ' + dataset_name, pop_size = 5)
-    de = DE(
-        pop_size=5,
-        sampling=get_sampling("int_random"),
-        eliminate_duplicates=True,
-    )
-    res = minimize(
-        CASH(),
-        de,
-        termination=('n_gen', 45),
-        seed=1,
-        save_history=True
-    )
+                if a == 'random':
 
-    print("Best solution found: %s" % res.X)
-    print("Function value: %s" % res.F)
-    print("Constraint violation: %s" % res.CV)
-    tracker.export()
+                    pop_size = 1
+                    iters = math.floor(budget/pop_size)
+
+                    tracker = PerformanceTracker(tracker_name, pop_size = pop_size)
+                    discrete_random_search(train, lower_bounds, upper_bounds, iters)
+                    tracker.export()
+                if a == 'ga':
+
+                    pop_size = 9
+                    iters = math.floor(budget/pop_size)
+
+                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
+                    ga = GA(
+                        pop_size=pop_size,
+                        sampling=get_sampling("int_random"),
+                        crossover=get_crossover("int_sbx", prob=1.0, eta=3.0),
+                        mutation=get_mutation("int_pm", eta=3.0),
+                        eliminate_duplicates=True,
+                    )
+                    res = minimize(
+                        CASH(),
+                        ga,
+                        termination=('n_gen', iters),
+                        seed=1,
+                        save_history=True
+                    )
+                    print(f"Best solution found: \nX = {res.X}\nF = {res.F}\nCV= {res.CV}")
+                    tracker.export()
+                if a == 'ps':
+
+                    pop_size = 45
+                    iters = math.floor(budget / pop_size)
+
+                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
+                    ps = PatternSearch(
+                        sampling=get_sampling("int_random"),
+                        eliminate_duplicates=True,
+                    )
+                    res = minimize(CASH(),
+                                   ps,
+                                   ('n_iter', iters),
+                                   seed=1,
+                                   verbose=False)
+                    tracker.export()
+                if a == 'de':
+
+                    pop_size = 5
+                    iters = math.floor(budget / pop_size)
+
+                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
+                    de = DE(
+                        pop_size=pop_size,
+                        sampling=get_sampling("int_random"),
+                        eliminate_duplicates=True,
+                    )
+                    res = minimize(
+                        CASH(),
+                        de,
+                        termination=('n_gen', iters),
+                        seed=1,
+                        save_history=True
+                    )
+
+                    print("Best solution found: %s" % res.X)
+                    print("Function value: %s" % res.F)
+                    print("Constraint violation: %s" % res.CV)
+                    tracker.export()
+
+if __name__ == '__main__':
+    main()
