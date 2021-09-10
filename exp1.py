@@ -690,7 +690,7 @@ def main():
             for i in range(iterations):
 
                 tracker_name = a + " " + d + " " + str(i)
-                budget = 450
+                budget = 360
 
                 if a == 'random':
                     pop_size = 1
