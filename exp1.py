@@ -148,7 +148,7 @@ def plot_trends(trends, y_0):
 
 
 class MlpModel(nn.Module):
-    def __init__(self, n_features=8, n_hidden=2, hidden_sizes=[7, 14]):
+    def __init__(self, n_features=8, n_hidden=2, hidden_sizes=[7, 14], dropout_rate=0.25):
         super().__init__()
         self.hidden = nn.ModuleList()
         self.n_features = n_features
@@ -158,12 +158,14 @@ class MlpModel(nn.Module):
             size = hidden_sizes[i]
             self.hidden.append(nn.Linear(current_dim, size))
             current_dim = size
+        self.dropout = nn.Dropout(dropout_rate)
         self.hidden.append(nn.Linear(current_dim, 2))
 
     def forward(self, x):
         x = x.view(-1, self.n_features)
         for layer in self.hidden[:-1]:
-            x = torch.sigmoid(layer(x))
+            x = torch.relu(layer(x))
+        x = self.dropout(x)
         return self.hidden[-1](x)
 
 
@@ -298,7 +300,7 @@ def build_model(params):
                         if params.get('hidden_5') > 0:
                             sizes.append(params.get('hidden_5'))
 
-        model = MlpModel(n_hidden=params['n_hidden'], hidden_sizes=sizes)
+        model = MlpModel(n_hidden=params['n_hidden'], hidden_sizes=sizes, dropout_rate=params['dropout'])
 
     return model
 
@@ -307,11 +309,12 @@ def build_model(params):
 
 
 def train(params, model_only=False):
+
     if isinstance(params, list):
         params = params_list_to_dict(params)
 
     start_time = time.time()
-    num_epochs = 400
+    num_epochs = 250
     learning_rate = 0.01
     optimizer_name = 'adam'
 
@@ -546,20 +549,22 @@ class PerformanceTracker:
             self.buffer_best_model = None
             self.buffer_best_params = None
 
+    @property
     def test_best_model(self):
 
         predicted_s = []
         predicted_l = []
         mse_arr = []
-        for i in range(6):
-            self.actual, predicted, mse = test(self.best_model)
+        for i in range(5):
+            model = train(self.best_model_params, model_only=True)
+            self.actual, predicted, mse = test(model)
             predicted_s.append(predicted[:, 0])
             predicted_l.append(predicted[:, 1])
             mse_arr.append(mse)
 
         predicted_s, predicted_l = np.stack(predicted_s), np.stack(predicted_l)
 
-        avg_s, avg_l = predicted_s.mean(axis=0), predicted_l.mean(axis=0)
+        avg_s, avg_l = predicted_s.mean(axis = 0), predicted_l.mean(axis=0)
         self.best_model_test_mse = np.array(mse_arr).mean()
 
         self.test_results = pd.DataFrame(data={
@@ -569,6 +574,11 @@ class PerformanceTracker:
             'predicted_length': avg_l
         })
 
+        rmse = lambda actual, predicted: np.sqrt(np.square(np.subtract(actual, predicted)).mean())
+
+        self.slope_rmse = rmse(self.actual[:, 0], avg_s)
+        self.duration_rmse = rmse(self.actual[:, 1], avg_l)
+
         return self.test_results
 
     def summary(self):
@@ -576,6 +586,15 @@ class PerformanceTracker:
         idx = ['best model', 'val mse', 'test mse', 'total time', 'function calls', 'iterations']
         vals = [str(self.best_model_params), self.best_mse, self.best_model_test_mse, total_time,
                 self.function_evaluations, self.iteration]
+        return pd.DataFrame(vals, index=idx, columns=['Value'])
+
+    def SDA(self):
+        idx = ['Slope RMSE', 'Duration RMSE', 'Average RMSE']
+        vals = [
+            round(self.slope_rmse, 3),
+            round(self.duration_rmse, 3),
+            round(np.sqrt(self.best_model_test_mse), 3)
+        ]
         return pd.DataFrame(vals, index=idx, columns=['Value'])
 
     def get_results(self, panda=True):
@@ -599,11 +618,12 @@ class PerformanceTracker:
         self.get_results().to_csv(self.__csv_name('Results'))
         self.get_rows().to_csv(self.__csv_name('Rows'))
         self.get_params().to_csv(self.__csv_name('Params'))
-        self.test_best_model().to_csv(self.__csv_name('Predictions'))
+        self.test_best_model.to_csv(self.__csv_name('Predictions'))
         self.summary().to_csv(self.__csv_name('Summary'))
+        self.SDA().to_csv(self.__csv_name('SDA'))
 
     def __csv_name(self, name):
-        p = "Experiment Results/" + self.experiment_name
+        p = "Experiment Results (New)/" + self.experiment_name
         Path(p).mkdir(parents=True, exist_ok=True)
         return p + "/" + name + ".csv"
 
@@ -669,7 +689,7 @@ def main():
         for a in algos:
             for i in range(iterations):
 
-                tracker_name = a + " " + d + " " + str(i) + " V2"
+                tracker_name = a + " " + d + " " + str(i)
                 budget = 450
 
                 if a == 'random':

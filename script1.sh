@@ -8,4 +8,4 @@
 #SBATCH --mail-type=BEGIN,END,FAIL
 
 source venv/bin/activate
-python exp.py
+python exp1.py

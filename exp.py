@@ -146,7 +146,7 @@ def plot_trends(trends, y_0):
 """
 
 class MlpModel(nn.Module):
-  def __init__(self, n_features = 8, n_hidden = 2, hidden_sizes = [7,14]):
+  def __init__(self, n_features = 8, n_hidden = 2, hidden_sizes = [7,14], dropout_rate = 0.25):
     super().__init__()
     self.hidden = nn.ModuleList()
     self.n_features = n_features
@@ -156,12 +156,14 @@ class MlpModel(nn.Module):
       size = hidden_sizes[i]
       self.hidden.append(nn.Linear(current_dim , size))
       current_dim = size
-    self.hidden.append(nn.Linear(current_dim , 2))
+    self.dropout = nn.Dropout(dropout_rate)
+    self.hidden.append(nn.Linear(current_dim, 2))
     
   def forward(self, x):
     x = x.view(-1,self.n_features)
     for layer in self.hidden[:-1]:
-      x = torch.sigmoid(layer(x))
+      x = torch.relu(layer(x))
+    x = self.dropout(x)
     return self.hidden[-1](x)
 
 """## LSTM"""
@@ -307,7 +309,7 @@ def train(params, model_only = False):
       params = params_list_to_dict(params)
 
     start_time = time.time()
-    num_epochs = 400
+    num_epochs = 1
     learning_rate = 0.01
     optimizer_name = 'adam'
   
@@ -665,7 +667,7 @@ def main():
         for a in algos:
             for i in range(iterations):
 
-                tracker_name = a + " " + d + " " + str(i)
+                tracker_name = a + " " + d + " " + str(i) + "V4"
                 budget = 450
 
                 if a == 'random':
