@@ -314,7 +314,7 @@ def train(params, model_only=False):
         params = params_list_to_dict(params)
 
     start_time = time.time()
-    num_epochs = 250
+    num_epochs = 200
     learning_rate = 0.01
     optimizer_name = 'adam'
 
