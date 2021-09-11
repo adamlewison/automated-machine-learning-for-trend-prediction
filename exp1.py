@@ -37,7 +37,7 @@ from pymoo.model.problem import Problem
 from pymoo.algorithms.so_cmaes import CMAES
 from pymoo.algorithms.so_de import DE
 from pymoo.algorithms.so_pattern_search import PatternSearch
-
+import sys
 # %%
 
 
@@ -313,8 +313,11 @@ def train(params, model_only=False):
     if isinstance(params, list):
         params = params_list_to_dict(params)
 
+    if 'num_epochs' not in globals():
+        num_epochs = 200
+
     start_time = time.time()
-    num_epochs = 200
+
     learning_rate = 0.01
     optimizer_name = 'adam'
 
@@ -623,7 +626,7 @@ class PerformanceTracker:
         self.SDA().to_csv(self.__csv_name('SDA'))
 
     def __csv_name(self, name):
-        p = "Experiment Results (New)/" + self.experiment_name
+        p = "Experiment Results (GPUO)/" + self.experiment_name
         Path(p).mkdir(parents=True, exist_ok=True)
         return p + "/" + name + ".csv"
 
@@ -669,18 +672,37 @@ valset = None
 testset = None
 tracker = None
 device = None
+num_epochs = 200
 
 
 def main():
-    global trainset, valset, testset, tracker, device
+    global trainset, valset, testset, tracker, device, num_epochs
+
+    datasets = ['NYSE', 'NASDAQ', 'STX40', 'BARC']
+    algos = ['random', 'ga', 'ps', 'de']
+    budget = 360
+
+    if len(sys.argv) >= 2:
+        cuda_off = False if sys.argv[1] == 'cuda_on' else True
+
+    if len(sys.argv) >= 3:
+        datasets = sys.argv[2].split(',')
+
+    if len(sys.argv) >= 4:
+        nums = sys.argv[3].split(',')
+        budget = int(nums[0])
+        num_epochs = int(nums[1])
+
+
+
+    print(cuda_off, budget, num_epochs, datasets)
+    return 0
+
     if cuda_off:
         device = torch.device("cpu")
     else:
         device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
 
-    if True:
-        datasets = ['NYSE', 'NASDAQ', 'STX40', 'BARC']
-        algos = ['random', 'ga', 'ps', 'de']
 
     iterations = 1
 
@@ -690,7 +712,7 @@ def main():
             for i in range(iterations):
 
                 tracker_name = a + " " + d + " " + str(i)
-                budget = 360
+
 
                 if a == 'random':
                     pop_size = 1
