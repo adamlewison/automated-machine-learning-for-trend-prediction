@@ -310,6 +310,7 @@ def build_model(params):
 
 def train(params, model_only=False):
 
+    global num_epochs
     if isinstance(params, list):
         params = params_list_to_dict(params)
 
@@ -674,7 +675,6 @@ tracker = None
 device = None
 num_epochs = 200
 
-
 def main():
     global trainset, valset, testset, tracker, device, num_epochs
 
@@ -693,16 +693,12 @@ def main():
         budget = int(nums[0])
         num_epochs = int(nums[1])
 
-
-
     print(cuda_off, budget, num_epochs, datasets)
-    return 0
 
     if cuda_off:
         device = torch.device("cpu")
     else:
         device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
-
 
     iterations = 1
 
@@ -710,10 +706,7 @@ def main():
         trainset, valset, testset = get_data(d)
         for a in algos:
             for i in range(iterations):
-
                 tracker_name = a + " " + d + " " + str(i)
-
-
                 if a == 'random':
                     pop_size = 1
                     iters = math.floor(budget / pop_size)

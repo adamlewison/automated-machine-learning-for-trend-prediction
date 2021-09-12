@@ -1,6 +1,6 @@
 #!/bin/sh
 #SBATCH --account=compsci
-#SBATCH --partition=ada
+#SBATCH --partition=gpuo
 #SBATCH --nodes=1 --ntasks=40
 #SBATCH --time=5-2:00:00
 #SBATCH --job-name="NewAUTOML4TPJob"

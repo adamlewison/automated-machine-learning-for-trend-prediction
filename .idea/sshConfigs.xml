@@ -2,7 +2,7 @@
 <project version="4">
   <component name="SshConfigs">
     <configs>
-      <sshConfig authType="PASSWORD" host="hpc.uct.ac.za" id="f2632206-4213-4014-b600-45ef709f05b9" port="22" nameFormat="DESCRIPTIVE" username="lwsada002" />
+      <sshConfig authType="PASSWORD" connectionConfig="{&quot;serverAliveInterval&quot;:300}" host="hpc.uct.ac.za" id="f2632206-4213-4014-b600-45ef709f05b9" port="22" nameFormat="DESCRIPTIVE" username="lwsada002" />
     </configs>
   </component>
 </project>
