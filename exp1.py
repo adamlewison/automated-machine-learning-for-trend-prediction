@@ -224,7 +224,7 @@ def get_data(filename, column_name='Close'):
             print("Not a float")
 
     features_df = pd.DataFrame(rows, index=index)
-    features_df.head()
+
     # %%
     # sax = features_df[column_name].plot()
     # plt.show()
@@ -233,11 +233,11 @@ def get_data(filename, column_name='Close'):
     # CONVERT TO TREND SEQUENCES
     features_df = sliding_window(features_df[column_name])
     features_df.head()
-
+    print(features_df.head())
     train_size = int(len(features_df) * .6)
     val_size = int(len(features_df) * .2)
     test_size = int(len(features_df) * .2)
-
+    print(len(features_df))
     train_df, val_df, test_df = features_df[:train_size], features_df[
                                                           train_size + 1: train_size + 1 + val_size], features_df[
                                                                                                       train_size + val_size + 1:]
@@ -287,7 +287,7 @@ def build_model(params):
     if params['model'] == models[0]:
         model = LstmModel(2, n_hidden=params['n_hidden'], n_layers=params['hidden_1'], dropout=params['dropout'])
     elif params['model'] == models[1]:
-        sizes = [];
+        sizes = []
 
         if params.get('hidden_1') > 0:
             sizes.append(params.get('hidden_1'))
@@ -357,7 +357,6 @@ def train(params, model_only=False):
 
             for idx, i in enumerate(model(X)):
                 predicted.append(i)
-
     actual, predicted = torch.stack(actual), torch.stack(predicted)
     end_time = time.time()
     mse = F.mse_loss(actual, predicted).cpu().item()
@@ -406,17 +405,7 @@ n_hidden = [1, 2, 3, 4, 5]
 
 optimizers = ['sgd']
 num_epochs = [25, 50, 75]
-'''
-	1.	model [lstm, mlp]
-	2.	learning_rate 0-4
-	3.	dropout 0-9
-	4.	n_hidden 1-5
-	5.	hidden_1 10-200
-	6.	hidden_2
-	7.	hidden_3
-	8.	hidden_4
-	9.	hidden_5
-'''
+
 lower_bounds = [0, 0, 0, 1, 4, 4, 4, 4, 4]
 upper_bounds = [
     len(models) - 1,
@@ -432,12 +421,6 @@ hidden_2 = np.arange(10, 201)
 hidden_3 = np.arange(10, 201)
 hidden_4 = np.arange(10, 201)
 hidden_5 = np.arange(10, 201)
-
-cnn_n_layers = [1, 2, 3]
-lstm_n_layers = [1, 2, 3]
-kernal_1 = [1, 2, 3]
-kernal_2 = [1, 2, 3]
-kernal_3 = [1, 2, 3]
 
 params = {
     'model': models,
@@ -545,8 +528,10 @@ class PerformanceTracker:
                 'end_time': self.buffer_latest_finish,
                 'val_mse': self.buffer_best_mse
             })
-            self.params.append(self.buffer_best_params)
-            self.models.append(self.buffer_best_model)
+            if self.buffer_best_params != None:
+                self.params.append(self.buffer_best_params)
+            if self.buffer_best_model != None:
+                self.models.append(self.buffer_best_model)
             self.buffer_earliest_start = time.time() + 9999
             self.buffer_latest_finish = time.time()
             self.buffer_best_mse = 9999
@@ -627,7 +612,7 @@ class PerformanceTracker:
         self.SDA().to_csv(self.__csv_name('SDA'))
 
     def __csv_name(self, name):
-        p = "Experiment Results (GPUO)/" + self.experiment_name
+        p = "Experiment Results (" + str(experiment_start_time) + ")/" + self.experiment_name
         Path(p).mkdir(parents=True, exist_ok=True)
         return p + "/" + name + ".csv"
 
@@ -674,26 +659,27 @@ testset = None
 tracker = None
 device = None
 num_epochs = 200
+experiment_start_time = time.ctime()
 
 def main():
-    global trainset, valset, testset, tracker, device, num_epochs
+    global device, num_epochs
 
     datasets = ['NYSE', 'NASDAQ', 'STX40', 'BARC']
     algos = ['random', 'ga', 'ps', 'de']
     budget = 360
 
+    #if len(sys.argv) >= 2:
+    #    cuda_off = False if sys.argv[1] == 'cuda_on' else True
+
     if len(sys.argv) >= 2:
-        cuda_off = False if sys.argv[1] == 'cuda_on' else True
+        if sys.argv[1] != 'all':
+            datasets = sys.argv[1].split(',')
 
     if len(sys.argv) >= 3:
-        datasets = sys.argv[2].split(',')
+        nums = sys.argv[2].split(',')
+        budget, num_epochs = int(nums[0]), int(nums[1])
 
-    if len(sys.argv) >= 4:
-        nums = sys.argv[3].split(',')
-        budget = int(nums[0])
-        num_epochs = int(nums[1])
-
-    print(cuda_off, budget, num_epochs, datasets)
+    print(datasets, 'budget:', budget, 'num_epochs:', num_epochs)
 
     if cuda_off:
         device = torch.device("cpu")
@@ -703,21 +689,22 @@ def main():
     iterations = 1
 
     for d in datasets:
+        global trainset, valset, testset
         trainset, valset, testset = get_data(d)
         for a in algos:
+            print(d,a)
+            global tracker
             for i in range(iterations):
                 tracker_name = a + " " + d + " " + str(i)
                 if a == 'random':
                     pop_size = 1
                     iters = math.floor(budget / pop_size)
-
                     tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
                     discrete_random_search(train, lower_bounds, upper_bounds, iters)
                     tracker.export()
                 if a == 'ga':
                     pop_size = 9
                     iters = math.floor(budget / pop_size)
-
                     tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
                     ga = GA(
                         pop_size=pop_size,
@@ -738,7 +725,6 @@ def main():
                 if a == 'ps':
                     pop_size = 45
                     iters = math.floor(budget / pop_size)
-
                     tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
                     ps = PatternSearch(
                         sampling=get_sampling("int_random"),
@@ -753,7 +739,6 @@ def main():
                 if a == 'de':
                     pop_size = 5
                     iters = math.floor(budget / pop_size)
-
                     tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
                     de = DE(
                         pop_size=pop_size,
@@ -767,7 +752,6 @@ def main():
                         seed=1,
                         save_history=True
                     )
-
                     print("Best solution found: %s" % res.X)
                     print("Function value: %s" % res.F)
                     print("Constraint violation: %s" % res.CV)

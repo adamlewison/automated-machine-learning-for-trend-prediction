@@ -37,12 +37,12 @@ from pymoo.model.problem import Problem
 from pymoo.algorithms.so_cmaes import CMAES
 from pymoo.algorithms.so_de import DE
 from pymoo.algorithms.so_pattern_search import PatternSearch
-
-#%%
-
+import sys
+# %%
 
 
 """## Helpers"""
+
 
 def regress(T):
     x = T.index.values
@@ -67,7 +67,8 @@ def regress(T):
 
     return out
 
-def sliding_window(T, max_error = 100, df = True):
+
+def sliding_window(T, max_error=100, df=True):
     rows = []
     anchor = 0
     while anchor < T.size:
@@ -85,28 +86,29 @@ def sliding_window(T, max_error = 100, df = True):
         return pd.DataFrame(rows, columns=['Slope', 'Length'])
     return rows
 
-def create_sequences(input_data: pd.DataFrame, target_column, sequence_length, to_numpy = True):
-  sequences = []
-  data_size = len(input_data)
 
-  for i in range(data_size - sequence_length):
+def create_sequences(input_data: pd.DataFrame, target_column, sequence_length, to_numpy=True):
+    sequences = []
+    data_size = len(input_data)
 
-    sequence = input_data[i : i + sequence_length]
-    label_postion = i + sequence_length
-    if isinstance(target_column, list):
-      label = input_data.iloc[label_postion][target_column].values
-    else:
-      label = input_data.iloc[label_postion][target_column]
-    
-    
-    if to_numpy:
-      v = (torch.Tensor(sequence.to_numpy()), torch.tensor(label).float() )
-    else:
-      v = (sequence, label)
+    for i in range(data_size - sequence_length):
 
-    sequences.append(v)
+        sequence = input_data[i: i + sequence_length]
+        label_postion = i + sequence_length
+        if isinstance(target_column, list):
+            label = input_data.iloc[label_postion][target_column].values
+        else:
+            label = input_data.iloc[label_postion][target_column]
 
-  return sequences
+        if to_numpy:
+            v = (torch.Tensor(sequence.to_numpy()), torch.tensor(label).float())
+        else:
+            v = (sequence, label)
+
+        sequences.append(v)
+
+    return sequences
+
 
 def abline(slope, intercept, length):
     """Plot a line from slope and intercept"""
@@ -115,94 +117,95 @@ def abline(slope, intercept, length):
     y_vals = intercept + slope * x_vals
     plt.plot(x_vals, y_vals, '--')
 
+
 def plot_trends(trends, y_0):
+    axes = plt.gca()
+    v_vals, y_vals = [], []
+    trends = trends.iloc()
 
-  axes = plt.gca()
-  v_vals, y_vals = [],[]
-  trends = trends.iloc()
-  
-  x_start = axes.get_xlim()[0]
-  x_finish = trends[0]['Length']
+    x_start = axes.get_xlim()[0]
+    x_finish = trends[0]['Length']
 
-  for trend in trends:
-    x_vals = np.array(x_start, x_finish)
+    for trend in trends:
+        x_vals = np.array(x_start, x_finish)
 
-    y_vals = intercept + trend['Slope'] * x_vals
-    intercept = y_vals[-1]
-    x_start = trend['Length'] + 1
-    x_finish = x_start
+        y_vals = intercept + trend['Slope'] * x_vals
+        intercept = y_vals[-1]
+        x_start = trend['Length'] + 1
+        x_finish = x_start
 
-  plt.plot(x_vals,y_vals, '--')
+    plt.plot(x_vals, y_vals, '--')
 
-#%%
+
+# %%
 """# Data Preprocessing"""
 
-
-
-#%%
+# %%
 """# Models
 
 ## MLP
 """
 
-class MlpModel(nn.Module):
-  def __init__(self, n_features = 8, n_hidden = 2, hidden_sizes = [7,14], dropout_rate = 0.25):
-    super().__init__()
-    self.hidden = nn.ModuleList()
-    self.n_features = n_features
-    current_dim = n_features
 
-    for i in range(n_hidden):
-      size = hidden_sizes[i]
-      self.hidden.append(nn.Linear(current_dim , size))
-      current_dim = size
-    self.dropout = nn.Dropout(dropout_rate)
-    self.hidden.append(nn.Linear(current_dim, 2))
-    
-  def forward(self, x):
-    x = x.view(-1,self.n_features)
-    for layer in self.hidden[:-1]:
-      x = torch.relu(layer(x))
-    x = self.dropout(x)
-    return self.hidden[-1](x)
+class MlpModel(nn.Module):
+    def __init__(self, n_features=8, n_hidden=2, hidden_sizes=[7, 14], dropout_rate=0.25):
+        super().__init__()
+        self.hidden = nn.ModuleList()
+        self.n_features = n_features
+        current_dim = n_features
+
+        for i in range(n_hidden):
+            size = hidden_sizes[i]
+            self.hidden.append(nn.Linear(current_dim, size))
+            current_dim = size
+        self.dropout = nn.Dropout(dropout_rate)
+        self.hidden.append(nn.Linear(current_dim, 2))
+
+    def forward(self, x):
+        x = x.view(-1, self.n_features)
+        for layer in self.hidden[:-1]:
+            x = torch.relu(layer(x))
+        x = self.dropout(x)
+        return self.hidden[-1](x)
+
 
 """## LSTM"""
 
+
 class LstmModel(nn.Module):
-  def __init__(self, n_features, n_hidden = 5, n_layers = 2, dropout = 0.2):
-    super().__init__()
+    def __init__(self, n_features, n_hidden=5, n_layers=2, dropout=0.2):
+        super().__init__()
 
-    self.n_hidden = n_hidden
-    self.n_features = n_features
+        self.n_hidden = n_hidden
+        self.n_features = n_features
 
-    self.lstm = nn.LSTM(
-        input_size = n_features,
-        hidden_size = n_hidden,
-        batch_first = True,
-        num_layers = n_layers,
-        dropout = dropout
-    )
+        self.lstm = nn.LSTM(
+            input_size=n_features,
+            hidden_size=n_hidden,
+            batch_first=True,
+            num_layers=n_layers,
+            dropout=dropout
+        )
 
-    # output prediction of our model
-    # takes number of hidden units as the size fir the input
-    self.regressor = nn.Linear(n_hidden, 2) # second number is number of features to output (will be 2)
-    
-  def forward(self, x):
-    x = x.view(-1,4,self.n_features)
-    self.lstm.flatten_parameters()
+        # output prediction of our model
+        # takes number of hidden units as the size fir the input
+        self.regressor = nn.Linear(n_hidden, 2)  # second number is number of features to output (will be 2)
 
-    _, (hidden, _) = self.lstm(x)
-    out = hidden[-1]
+    def forward(self, x):
+        x = x.view(-1, 4, self.n_features)
+        self.lstm.flatten_parameters()
 
-    return self.regressor(out)
+        _, (hidden, _) = self.lstm(x)
+        out = hidden[-1]
 
-#%%
+        return self.regressor(out)
+
+
+# %%
 """# Training"""
 
 
-
-
-def get_data(filename, column_name = 'Close'):
+def get_data(filename, column_name='Close'):
     df = pd.read_csv("data/" + filename + ".csv", parse_dates=['Date'])
     df.head()
 
@@ -281,38 +284,44 @@ def get_data(filename, column_name = 'Close'):
 
 
 def build_model(params):
-  if params['model'] == models[0]:
-    model = LstmModel(2, n_hidden=params['n_hidden'], n_layers=params['hidden_1'], dropout = params['dropout'])
-  elif params['model'] == models[1]:
-    sizes = [];
+    if params['model'] == models[0]:
+        model = LstmModel(2, n_hidden=params['n_hidden'], n_layers=params['hidden_1'], dropout=params['dropout'])
+    elif params['model'] == models[1]:
+        sizes = [];
 
-    if params.get('hidden_1') > 0:
-      sizes.append(params.get('hidden_1'))
-      if params.get('hidden_2') > 0:
-        sizes.append(params.get('hidden_2'))
-        if params.get('hidden_3') > 0:
-          sizes.append(params.get('hidden_3'))
-          if params.get('hidden_4') > 0:
-            sizes.append(params.get('hidden_4'))
-            if params.get('hidden_5') > 0:
-              sizes.append(params.get('hidden_5'))
+        if params.get('hidden_1') > 0:
+            sizes.append(params.get('hidden_1'))
+            if params.get('hidden_2') > 0:
+                sizes.append(params.get('hidden_2'))
+                if params.get('hidden_3') > 0:
+                    sizes.append(params.get('hidden_3'))
+                    if params.get('hidden_4') > 0:
+                        sizes.append(params.get('hidden_4'))
+                        if params.get('hidden_5') > 0:
+                            sizes.append(params.get('hidden_5'))
 
-    model = MlpModel(n_hidden= params['n_hidden'], hidden_sizes = sizes)
-  
-  return model
+        model = MlpModel(n_hidden=params['n_hidden'], hidden_sizes=sizes, dropout_rate=params['dropout'])
+
+    return model
+
 
 """## Train Method"""
 
-def train(params, model_only = False):
 
-    if isinstance(params,list):
-      params = params_list_to_dict(params)
+def train(params, model_only=False):
+
+    global num_epochs
+    if isinstance(params, list):
+        params = params_list_to_dict(params)
+
+    if 'num_epochs' not in globals():
+        num_epochs = 200
 
     start_time = time.time()
-    num_epochs = 1
+
     learning_rate = 0.01
     optimizer_name = 'adam'
-  
+
     if (params.get('num_epochs') != None):
         num_epochs = params.get('num_epochs')
 
@@ -359,7 +368,9 @@ def train(params, model_only = False):
     print(str(mse))
     return mse
 
+
 """## Test Method"""
+
 
 def test(model):
     model.to(device)
@@ -381,19 +392,20 @@ def test(model):
 
     return actual, predicted, np.square(np.subtract(actual, predicted)).mean()
 
-#%%
+
+# %%
 """# Combined Hyper-Parameter and Algorithm Selection
 
 ## Parameter Grid
 """
 
 models = ['lstm', 'mlp']
-learning_rates = [1e-1,1e-2,1e-3,1e-4,1e-5]
-dropout_rates = [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
-n_hidden = [1,2,3,4,5]
+learning_rates = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
+dropout_rates = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+n_hidden = [1, 2, 3, 4, 5]
 
 optimizers = ['sgd']
-num_epochs = [25,50,75]
+num_epochs = [25, 50, 75]
 '''
 	1.	model [lstm, mlp]
 	2.	learning_rate 0-4
@@ -405,27 +417,27 @@ num_epochs = [25,50,75]
 	8.	hidden_4
 	9.	hidden_5
 '''
-lower_bounds = [0,0,0,1,4,4,4,4,4]
+lower_bounds = [0, 0, 0, 1, 4, 4, 4, 4, 4]
 upper_bounds = [
-                len(models) -1,
-                len(learning_rates) -1,
-                len(dropout_rates) -1,
-                5,100,100,100,100,100,
-                #len(optimizers) - 1,
-                #len(num_epochs) - 1
-                ]
+    len(models) - 1,
+    len(learning_rates) - 1,
+    len(dropout_rates) - 1,
+    5, 100, 100, 100, 100, 100,
+    # len(optimizers) - 1,
+    # len(num_epochs) - 1
+]
 
-hidden_1 = np.arange(10,201)
-hidden_2 = np.arange(10,201)
-hidden_3 = np.arange(10,201)
-hidden_4 = np.arange(10,201)
-hidden_5 = np.arange(10,201)
+hidden_1 = np.arange(10, 201)
+hidden_2 = np.arange(10, 201)
+hidden_3 = np.arange(10, 201)
+hidden_4 = np.arange(10, 201)
+hidden_5 = np.arange(10, 201)
 
-cnn_n_layers = [1,2,3]
-lstm_n_layers = [1,2,3]
-kernal_1 = [1,2,3]
-kernal_2 = [1,2,3]
-kernal_3 = [1,2,3]
+cnn_n_layers = [1, 2, 3]
+lstm_n_layers = [1, 2, 3]
+kernal_1 = [1, 2, 3]
+kernal_2 = [1, 2, 3]
+kernal_3 = [1, 2, 3]
 
 params = {
     'model': models,
@@ -441,29 +453,31 @@ params = {
     'hidden_5': hidden_5,
 }
 
+
 def params_list_to_dict(params):
-  print("Params in:", params)
-  if isinstance(params, dict):
-    return params
-  
-  if isinstance(params, np.ndarray):
-    params = params.astype(int)
+    print("Params in:", params)
+    if isinstance(params, dict):
+        return params
 
-  new_params = {}
+    if isinstance(params, np.ndarray):
+        params = params.astype(int)
 
-  new_params['model']         = models[params[0]] if len(params) > 0 else models[0]
-  new_params['learning_rate'] = learning_rates[params[1]] if len(params) > 1 else learning_rates[1]
-  new_params['dropout']       = dropout_rates[params[2]] if len(params) > 2 else dropout_rates[0]
-  new_params['n_hidden']      = params[3] if len(params) > 3 else 1
-  new_params['hidden_1']      = params[4] if len(params) > 4 else 20
-  new_params['hidden_2']      = params[5] if len(params) > 5 else 0
-  new_params['hidden_3']      = params[6] if len(params) > 6 else 0
-  new_params['hidden_4']      = params[7] if len(params) > 7 else 0
-  new_params['hidden_5']      = params[8] if len(params) > 8 else 0
-  
-  return new_params
+    new_params = {}
 
-#%%
+    new_params['model'] = models[params[0]] if len(params) > 0 else models[0]
+    new_params['learning_rate'] = learning_rates[params[1]] if len(params) > 1 else learning_rates[1]
+    new_params['dropout'] = dropout_rates[params[2]] if len(params) > 2 else dropout_rates[0]
+    new_params['n_hidden'] = params[3] if len(params) > 3 else 1
+    new_params['hidden_1'] = params[4] if len(params) > 4 else 20
+    new_params['hidden_2'] = params[5] if len(params) > 5 else 0
+    new_params['hidden_3'] = params[6] if len(params) > 6 else 0
+    new_params['hidden_4'] = params[7] if len(params) > 7 else 0
+    new_params['hidden_5'] = params[8] if len(params) > 8 else 0
+
+    return new_params
+
+
+# %%
 
 class PerformanceTracker:
 
@@ -539,13 +553,15 @@ class PerformanceTracker:
             self.buffer_best_model = None
             self.buffer_best_params = None
 
+    @property
     def test_best_model(self):
-        '''
+
         predicted_s = []
         predicted_l = []
         mse_arr = []
         for i in range(5):
-            self.actual, predicted, mse = test(self.best_model)
+            model = train(self.best_model_params, model_only=True)
+            self.actual, predicted, mse = test(model)
             predicted_s.append(predicted[:, 0])
             predicted_l.append(predicted[:, 1])
             mse_arr.append(mse)
@@ -561,14 +577,12 @@ class PerformanceTracker:
             'predicted_slope': avg_s,
             'predicted_length': avg_l
         })
-        '''
-        self.actual, self.predicted, self.best_model_test_mse = test(self.best_model)
-        self.test_results = pd.DataFrame(data={
-            'actual_slope': self.actual[:, 0],
-            'actual_length': self.actual[:, 1],
-            'predicted_slope': self.predicted[:, 0],
-            'predicted_length': self.predicted[:, 1]
-        })
+
+        rmse = lambda actual, predicted: np.sqrt(np.square(np.subtract(actual, predicted)).mean())
+
+        self.slope_rmse = rmse(self.actual[:, 0], avg_s)
+        self.duration_rmse = rmse(self.actual[:, 1], avg_l)
+
         return self.test_results
 
     def summary(self):
@@ -576,6 +590,15 @@ class PerformanceTracker:
         idx = ['best model', 'val mse', 'test mse', 'total time', 'function calls', 'iterations']
         vals = [str(self.best_model_params), self.best_mse, self.best_model_test_mse, total_time,
                 self.function_evaluations, self.iteration]
+        return pd.DataFrame(vals, index=idx, columns=['Value'])
+
+    def SDA(self):
+        idx = ['Slope RMSE', 'Duration RMSE', 'Average RMSE']
+        vals = [
+            round(self.slope_rmse, 3),
+            round(self.duration_rmse, 3),
+            round(np.sqrt(self.best_model_test_mse), 3)
+        ]
         return pd.DataFrame(vals, index=idx, columns=['Value'])
 
     def get_results(self, panda=True):
@@ -599,43 +622,45 @@ class PerformanceTracker:
         self.get_results().to_csv(self.__csv_name('Results'))
         self.get_rows().to_csv(self.__csv_name('Rows'))
         self.get_params().to_csv(self.__csv_name('Params'))
-        self.test_best_model().to_csv(self.__csv_name('Predictions'))
+        self.test_best_model.to_csv(self.__csv_name('Predictions'))
         self.summary().to_csv(self.__csv_name('Summary'))
+        self.SDA().to_csv(self.__csv_name('SDA'))
 
     def __csv_name(self, name):
-        p = "Experiment Results/" + self.experiment_name
+        p = "Experiment Results (GPUO)/" + self.experiment_name
         Path(p).mkdir(parents=True, exist_ok=True)
         return p + "/" + name + ".csv"
 
 
-#%%
+# %%
 
-def discrete_random_search(f, lower_bounds, upper_bounds, iterations = 10):
-  D = len(lower_bounds)
-  best_f = 9999.0
-  best_x = [None] * D
+def discrete_random_search(f, lower_bounds, upper_bounds, iterations=10):
+    D = len(lower_bounds)
+    best_f = 9999.0
+    best_x = [None] * D
 
-  for i in range(iterations):
+    for i in range(iterations):
 
-    new_x = [random.randint(lower_bounds[d], upper_bounds[d]) for d in range(D)]
-    new_f = f(new_x)
+        new_x = [random.randint(lower_bounds[d], upper_bounds[d]) for d in range(D)]
+        new_f = f(new_x)
 
-    if new_f < best_f: 
-      best_f = new_f
-      best_x = new_x
-    
-  return {'best_x': best_x, 'best_f': best_f}
+        if new_f < best_f:
+            best_f = new_f
+            best_x = new_x
+
+    return {'best_x': best_x, 'best_f': best_f}
+
 
 class CASH(Problem):
 
     def __init__(self):
-        super().__init__(n_var=len(lower_bounds), n_obj=1, xl= lower_bounds, xu= upper_bounds, type_var = int)
+        super().__init__(n_var=len(lower_bounds), n_obj=1, xl=lower_bounds, xu=upper_bounds, type_var=int)
 
     def _evaluate(self, x, out, *args, **kwargs):
         print(x.shape[0])
         fs = []
         for i in range(x.shape[0]):
-          fs.append(train(params_list_to_dict(x[i])))
+            fs.append(train(params_list_to_dict(x[i])))
         out["F"] = np.array(fs)
 
 
@@ -648,17 +673,32 @@ valset = None
 testset = None
 tracker = None
 device = None
+num_epochs = 200
 
 def main():
-    global trainset, valset, testset, tracker, device
+    global trainset, valset, testset, tracker, device, num_epochs
+
+    datasets = ['NYSE', 'NASDAQ', 'STX40', 'BARC']
+    algos = ['random', 'ga', 'ps', 'de']
+    budget = 360
+
+    if len(sys.argv) >= 2:
+        cuda_off = False if sys.argv[1] == 'cuda_on' else True
+
+    if len(sys.argv) >= 3:
+        datasets = sys.argv[2].split(',')
+
+    if len(sys.argv) >= 4:
+        nums = sys.argv[3].split(',')
+        budget = int(nums[0])
+        num_epochs = int(nums[1])
+
+    print(cuda_off, budget, num_epochs, datasets)
+
     if cuda_off:
         device = torch.device("cpu")
     else:
         device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
-
-    if True:
-        datasets = ['NYSE', 'NASDAQ', 'STX40', 'BARC']
-        algos = ['random', 'ga', 'ps', 'de']
 
     iterations = 1
 
@@ -666,22 +706,17 @@ def main():
         trainset, valset, testset = get_data(d)
         for a in algos:
             for i in range(iterations):
-
-                tracker_name = a + " " + d + " " + str(i) + "V4"
-                budget = 450
-
+                tracker_name = a + " " + d + " " + str(i)
                 if a == 'random':
-
                     pop_size = 1
-                    iters = math.floor(budget/pop_size)
+                    iters = math.floor(budget / pop_size)
 
-                    tracker = PerformanceTracker(tracker_name, pop_size = pop_size)
+                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
                     discrete_random_search(train, lower_bounds, upper_bounds, iters)
                     tracker.export()
                 if a == 'ga':
-
                     pop_size = 9
-                    iters = math.floor(budget/pop_size)
+                    iters = math.floor(budget / pop_size)
 
                     tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
                     ga = GA(
@@ -701,7 +736,6 @@ def main():
                     print(f"Best solution found: \nX = {res.X}\nF = {res.F}\nCV= {res.CV}")
                     tracker.export()
                 if a == 'ps':
-
                     pop_size = 45
                     iters = math.floor(budget / pop_size)
 
@@ -717,7 +751,6 @@ def main():
                                    verbose=False)
                     tracker.export()
                 if a == 'de':
-
                     pop_size = 5
                     iters = math.floor(budget / pop_size)
 
@@ -739,6 +772,7 @@ def main():
                     print("Function value: %s" % res.F)
                     print("Constraint violation: %s" % res.CV)
                     tracker.export()
+
 
 if __name__ == '__main__':
     main()
