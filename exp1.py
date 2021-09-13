@@ -221,7 +221,7 @@ def get_data(filename, column_name='Close'):
             index.append((row.Date - df.Date[0]).days)
             rows.append(row_data)
         except:
-            print("Not a float")
+            pass
 
     features_df = pd.DataFrame(rows, index=index)
 
@@ -232,12 +232,11 @@ def get_data(filename, column_name='Close'):
 
     # CONVERT TO TREND SEQUENCES
     features_df = sliding_window(features_df[column_name])
-    features_df.head()
-    print(features_df.head())
+
     train_size = int(len(features_df) * .6)
     val_size = int(len(features_df) * .2)
     test_size = int(len(features_df) * .2)
-    print(len(features_df))
+
     train_df, val_df, test_df = features_df[:train_size], features_df[
                                                           train_size + 1: train_size + 1 + val_size], features_df[
                                                                                                       train_size + val_size + 1:]
@@ -252,15 +251,12 @@ def get_data(filename, column_name='Close'):
         columns=train_df.columns
     )
 
-    train_df.head()
-
     val_df = pd.DataFrame(
         val_df,  # scaler.transform(val_df),
         index=val_df.index,
         columns=val_df.columns
     )
 
-    val_df.head()
 
     test_df = pd.DataFrame(
         test_df,  # scaler.transform(test_df),
@@ -268,8 +264,6 @@ def get_data(filename, column_name='Close'):
         columns=test_df.columns
     )
 
-    test_df.head()
-    # %%
     SEQUENCE_LENGTH = 4
     target = ['Slope', 'Length']
     train_sequences = create_sequences(train_df, target, SEQUENCE_LENGTH)
@@ -288,7 +282,6 @@ def build_model(params):
         model = LstmModel(2, n_hidden=params['n_hidden'], n_layers=params['hidden_1'], dropout=params['dropout'])
     elif params['model'] == models[1]:
         sizes = []
-
         if params.get('hidden_1') > 0:
             sizes.append(params.get('hidden_1'))
             if params.get('hidden_2') > 0:
@@ -303,9 +296,6 @@ def build_model(params):
         model = MlpModel(n_hidden=params['n_hidden'], hidden_sizes=sizes, dropout_rate=params['dropout'])
 
     return model
-
-
-"""## Train Method"""
 
 
 def train(params, model_only=False):
