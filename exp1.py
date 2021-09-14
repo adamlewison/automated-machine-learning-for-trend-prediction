@@ -648,18 +648,15 @@ valset = None
 testset = None
 tracker = None
 device = None
-num_epochs = 200
+num_epochs = 5
 experiment_start_time = time.ctime()
 
 def main():
     global device, num_epochs
 
-    datasets = ['NYSE', 'NASDAQ', 'STX40', 'BARC']
-    algos = ['random', 'ga', 'ps', 'de']
-    budget = 360
-
-    #if len(sys.argv) >= 2:
-    #    cuda_off = False if sys.argv[1] == 'cuda_on' else True
+    datasets = ['NYSE', 'NASDAQ', 'STX40']
+    algos = ['random', 'ps', 'de']
+    budget = 450
 
     if len(sys.argv) >= 2:
         if sys.argv[1] != 'all':
@@ -676,7 +673,6 @@ def main():
     else:
         device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
 
-    iterations = 1
 
     for d in datasets:
         global trainset, valset, testset
@@ -684,68 +680,47 @@ def main():
         for a in algos:
             print(d,a)
             global tracker
-            for i in range(iterations):
-                tracker_name = a + " " + d + " " + str(i)
-                if a == 'random':
-                    pop_size = 1
-                    iters = math.floor(budget / pop_size)
-                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
-                    discrete_random_search(train, lower_bounds, upper_bounds, iters)
-                    tracker.export()
-                if a == 'ga':
-                    pop_size = 9
-                    iters = math.floor(budget / pop_size)
-                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
-                    ga = GA(
-                        pop_size=pop_size,
-                        sampling=get_sampling("int_random"),
-                        crossover=get_crossover("int_sbx", prob=1.0, eta=3.0),
-                        mutation=get_mutation("int_pm", eta=3.0),
-                        eliminate_duplicates=True,
-                    )
-                    res = minimize(
-                        CASH(),
-                        ga,
-                        termination=('n_gen', iters),
-                        seed=1,
-                        save_history=True
-                    )
-                    print(f"Best solution found: \nX = {res.X}\nF = {res.F}\nCV= {res.CV}")
-                    tracker.export()
-                if a == 'ps':
-                    pop_size = 45
-                    iters = math.floor(budget / pop_size)
-                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
-                    ps = PatternSearch(
-                        sampling=get_sampling("int_random"),
-                        eliminate_duplicates=True,
-                    )
-                    res = minimize(CASH(),
-                                   ps,
-                                   ('n_iter', iters),
-                                   seed=1,
-                                   verbose=False)
-                    tracker.export()
-                if a == 'de':
-                    pop_size = 5
-                    iters = math.floor(budget / pop_size)
-                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
-                    de = DE(
-                        pop_size=pop_size,
-                        sampling=get_sampling("int_random"),
-                        eliminate_duplicates=True,
-                    )
-                    res = minimize(
-                        CASH(),
-                        de,
-                        termination=('n_gen', iters),
-                        seed=1,
-                        save_history=True
-                    )
-                    print("Best solution found: %s" % res.X)
-                    print("Function value: %s" % res.F)
-                    print("Constraint violation: %s" % res.CV)
-                    tracker.export()
+            tracker_name = a + " " + d
+            if a == 'random':
+                pop_size = 1
+                iters = math.floor(budget / pop_size)
+                tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
+                discrete_random_search(train, lower_bounds, upper_bounds, iters)
+                tracker.export()
+            if a == 'ps':
+                pop_size = 45
+                iters = math.floor(budget / pop_size)
+                tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
+                ps = PatternSearch(
+                    sampling=get_sampling("int_random"),
+                    eliminate_duplicates=True,
+                )
+                res = minimize(CASH(),
+                               ps,
+                               ('n_iter', iters),
+                               seed=1,
+                               verbose=False)
+                tracker.export()
+            if a == 'de':
+                pop_size = 5
+                iters = math.floor(budget / pop_size)
+                tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
+                de = DE(
+                    pop_size=pop_size,
+                    sampling=get_sampling("int_random"),
+                    eliminate_duplicates=True,
+                )
+                res = minimize(
+                    CASH(),
+                    de,
+                    termination=('n_gen', iters),
+                    seed=1,
+                    save_history=True
+                )
+                print("Best solution found: %s" % res.X)
+                print("Function value: %s" % res.F)
+                print("Constraint violation: %s" % res.CV)
+                tracker.export()
 
 
 if __name__ == '__main__':
