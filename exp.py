@@ -655,7 +655,7 @@ valset = None
 testset = None
 tracker = None
 device = None
-num_epochs = 5#25
+num_epochs = 2#25
 experiment_start_time = time.asctime()
 
 def main():
@@ -664,9 +664,6 @@ def main():
     datasets = ['NYSE', 'NASDAQ', 'STX40']
     algos = ['de']
     budget = 180#360
-
-    #if len(sys.argv) >= 2:
-    #    cuda_off = False if sys.argv[1] == 'cuda_on' else True
 
     if len(sys.argv) >= 2:
         if sys.argv[1] != 'all':
@@ -689,9 +686,9 @@ def main():
         global trainset, valset, testset
         trainset, valset, testset = get_data(d)
 
-        pop_sizes = [2, 5]#[2, 5, 10, 20]
-        F_arr = [0, 0.15]#[0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
-        Cr_arr = [0, 0.15]#[0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
+        pop_sizes = [2, 5, 10, 20]
+        F_arr = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
+        Cr_arr = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
         rows = []
 
         for pop_size in pop_sizes:
