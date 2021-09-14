@@ -221,10 +221,10 @@ def get_data(filename, column_name='Close'):
             index.append((row.Date - df.Date[0]).days)
             rows.append(row_data)
         except:
-            print("Not a float")
+            pass
 
     features_df = pd.DataFrame(rows, index=index)
-    features_df.head()
+
     # %%
     # sax = features_df[column_name].plot()
     # plt.show()
@@ -232,7 +232,6 @@ def get_data(filename, column_name='Close'):
 
     # CONVERT TO TREND SEQUENCES
     features_df = sliding_window(features_df[column_name])
-    features_df.head()
 
     train_size = int(len(features_df) * .6)
     val_size = int(len(features_df) * .2)
@@ -252,15 +251,12 @@ def get_data(filename, column_name='Close'):
         columns=train_df.columns
     )
 
-    train_df.head()
-
     val_df = pd.DataFrame(
         val_df,  # scaler.transform(val_df),
         index=val_df.index,
         columns=val_df.columns
     )
 
-    val_df.head()
 
     test_df = pd.DataFrame(
         test_df,  # scaler.transform(test_df),
@@ -268,8 +264,6 @@ def get_data(filename, column_name='Close'):
         columns=test_df.columns
     )
 
-    test_df.head()
-    # %%
     SEQUENCE_LENGTH = 4
     target = ['Slope', 'Length']
     train_sequences = create_sequences(train_df, target, SEQUENCE_LENGTH)
@@ -287,8 +281,7 @@ def build_model(params):
     if params['model'] == models[0]:
         model = LstmModel(2, n_hidden=params['n_hidden'], n_layers=params['hidden_1'], dropout=params['dropout'])
     elif params['model'] == models[1]:
-        sizes = [];
-
+        sizes = []
         if params.get('hidden_1') > 0:
             sizes.append(params.get('hidden_1'))
             if params.get('hidden_2') > 0:
@@ -303,9 +296,6 @@ def build_model(params):
         model = MlpModel(n_hidden=params['n_hidden'], hidden_sizes=sizes, dropout_rate=params['dropout'])
 
     return model
-
-
-"""## Train Method"""
 
 
 def train(params, model_only=False):
@@ -357,7 +347,6 @@ def train(params, model_only=False):
 
             for idx, i in enumerate(model(X)):
                 predicted.append(i)
-
     actual, predicted = torch.stack(actual), torch.stack(predicted)
     end_time = time.time()
     mse = F.mse_loss(actual, predicted).cpu().item()
@@ -406,17 +395,7 @@ n_hidden = [1, 2, 3, 4, 5]
 
 optimizers = ['sgd']
 num_epochs = [25, 50, 75]
-'''
-	1.	model [lstm, mlp]
-	2.	learning_rate 0-4
-	3.	dropout 0-9
-	4.	n_hidden 1-5
-	5.	hidden_1 10-200
-	6.	hidden_2
-	7.	hidden_3
-	8.	hidden_4
-	9.	hidden_5
-'''
+
 lower_bounds = [0, 0, 0, 1, 4, 4, 4, 4, 4]
 upper_bounds = [
     len(models) - 1,
@@ -432,12 +411,6 @@ hidden_2 = np.arange(10, 201)
 hidden_3 = np.arange(10, 201)
 hidden_4 = np.arange(10, 201)
 hidden_5 = np.arange(10, 201)
-
-cnn_n_layers = [1, 2, 3]
-lstm_n_layers = [1, 2, 3]
-kernal_1 = [1, 2, 3]
-kernal_2 = [1, 2, 3]
-kernal_3 = [1, 2, 3]
 
 params = {
     'model': models,
@@ -545,8 +518,10 @@ class PerformanceTracker:
                 'end_time': self.buffer_latest_finish,
                 'val_mse': self.buffer_best_mse
             })
-            self.params.append(self.buffer_best_params)
-            self.models.append(self.buffer_best_model)
+            if self.buffer_best_params != None:
+                self.params.append(self.buffer_best_params)
+            if self.buffer_best_model != None:
+                self.models.append(self.buffer_best_model)
             self.buffer_earliest_start = time.time() + 9999
             self.buffer_latest_finish = time.time()
             self.buffer_best_mse = 9999
@@ -616,18 +591,21 @@ class PerformanceTracker:
     def get_params(self):
         return pd.DataFrame(self.params)
 
+    def export_de(self, pop_size, F, CR):
+        pd.DataFrame([pop_size,F,CR], index=['pop_size','F','CR']).to_csv(self.csv_name('DE_Info'))
+
     def export(self):
 
         pd.set_option('display.float_format', '{:.2f}'.format)
-        self.get_results().to_csv(self.__csv_name('Results'))
-        self.get_rows().to_csv(self.__csv_name('Rows'))
-        self.get_params().to_csv(self.__csv_name('Params'))
-        self.test_best_model.to_csv(self.__csv_name('Predictions'))
-        self.summary().to_csv(self.__csv_name('Summary'))
-        self.SDA().to_csv(self.__csv_name('SDA'))
+        self.get_results().to_csv(self.csv_name('Results'))
+        self.get_rows().to_csv(self.csv_name('Rows'))
+        self.get_params().to_csv(self.csv_name('Params'))
+        self.test_best_model.to_csv(self.csv_name('Predictions'))
+        self.summary().to_csv(self.csv_name('Summary'))
+        self.SDA().to_csv(self.csv_name('SDA'))
 
-    def __csv_name(self, name):
-        p = "Experiment Results (GPUO)/" + self.experiment_name
+    def csv_name(self, name):
+        p = "Experiment Results (" + str(experiment_start_time) + ")/" + self.experiment_name
         Path(p).mkdir(parents=True, exist_ok=True)
         return p + "/" + name + ".csv"
 
@@ -663,6 +641,10 @@ class CASH(Problem):
             fs.append(train(params_list_to_dict(x[i])))
         out["F"] = np.array(fs)
 
+def csv_name(name):
+    p = "Experiment Results (" + str(experiment_start_time) + ")"
+    Path(p).mkdir(parents=True, exist_ok=True)
+    return p + "/" + name + ".csv"
 
 ## GLOBALS
 cuda_off = True
@@ -673,27 +655,28 @@ valset = None
 testset = None
 tracker = None
 device = None
-num_epochs = 200
+num_epochs = 5#25
+experiment_start_time = time.asctime()
 
 def main():
-    global trainset, valset, testset, tracker, device, num_epochs
+    global device, num_epochs
 
-    datasets = ['NYSE', 'NASDAQ', 'STX40', 'BARC']
-    algos = ['random', 'ga', 'ps', 'de']
-    budget = 360
+    datasets = ['NYSE', 'NASDAQ', 'STX40']
+    algos = ['de']
+    budget = 180#360
+
+    #if len(sys.argv) >= 2:
+    #    cuda_off = False if sys.argv[1] == 'cuda_on' else True
 
     if len(sys.argv) >= 2:
-        cuda_off = False if sys.argv[1] == 'cuda_on' else True
+        if sys.argv[1] != 'all':
+            datasets = sys.argv[1].split(',')
 
     if len(sys.argv) >= 3:
-        datasets = sys.argv[2].split(',')
+        nums = sys.argv[2].split(',')
+        budget, num_epochs = int(nums[0]), int(nums[1])
 
-    if len(sys.argv) >= 4:
-        nums = sys.argv[3].split(',')
-        budget = int(nums[0])
-        num_epochs = int(nums[1])
-
-    print(cuda_off, budget, num_epochs, datasets)
+    print(datasets, 'budget:', budget, 'num_epochs:', num_epochs)
 
     if cuda_off:
         device = torch.device("cpu")
@@ -703,60 +686,26 @@ def main():
     iterations = 1
 
     for d in datasets:
+        global trainset, valset, testset
         trainset, valset, testset = get_data(d)
-        for a in algos:
-            for i in range(iterations):
-                tracker_name = a + " " + d + " " + str(i)
-                if a == 'random':
-                    pop_size = 1
-                    iters = math.floor(budget / pop_size)
 
-                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
-                    discrete_random_search(train, lower_bounds, upper_bounds, iters)
-                    tracker.export()
-                if a == 'ga':
-                    pop_size = 9
-                    iters = math.floor(budget / pop_size)
+        pop_sizes = [2, 5]#[2, 5, 10, 20]
+        F_arr = [0, 0.15]#[0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
+        Cr_arr = [0, 0.15]#[0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
+        rows = []
 
-                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
-                    ga = GA(
-                        pop_size=pop_size,
-                        sampling=get_sampling("int_random"),
-                        crossover=get_crossover("int_sbx", prob=1.0, eta=3.0),
-                        mutation=get_mutation("int_pm", eta=3.0),
-                        eliminate_duplicates=True,
-                    )
-                    res = minimize(
-                        CASH(),
-                        ga,
-                        termination=('n_gen', iters),
-                        seed=1,
-                        save_history=True
-                    )
-                    print(f"Best solution found: \nX = {res.X}\nF = {res.F}\nCV= {res.CV}")
-                    tracker.export()
-                if a == 'ps':
-                    pop_size = 45
-                    iters = math.floor(budget / pop_size)
+        for pop_size in pop_sizes:
+            for F in F_arr:
+                for CR in Cr_arr:
 
-                    tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
-                    ps = PatternSearch(
-                        sampling=get_sampling("int_random"),
-                        eliminate_duplicates=True,
-                    )
-                    res = minimize(CASH(),
-                                   ps,
-                                   ('n_iter', iters),
-                                   seed=1,
-                                   verbose=False)
-                    tracker.export()
-                if a == 'de':
-                    pop_size = 5
+                    global tracker
                     iters = math.floor(budget / pop_size)
-
+                    tracker_name = "DE " + d + " " + str(pop_size) + "," + str(F) + "," + str(CR)
                     tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
                     de = DE(
                         pop_size=pop_size,
+                        CR=CR,
+                        F=F,
                         sampling=get_sampling("int_random"),
                         eliminate_duplicates=True,
                     )
@@ -767,12 +716,19 @@ def main():
                         seed=1,
                         save_history=True
                     )
-
                     print("Best solution found: %s" % res.X)
                     print("Function value: %s" % res.F)
                     print("Constraint violation: %s" % res.CV)
+
+                    rows.append(dict(
+                        pop_size=pop_size, F=F, CR=CR, mse=res.F
+                    ))
+
+                    tracker.export_de(pop_size, F, CR)
                     tracker.export()
 
+        results = pd.DataFrame(rows)
+        results.to_csv(csv_name('DE Results ' + d))
 
 if __name__ == '__main__':
     main()
