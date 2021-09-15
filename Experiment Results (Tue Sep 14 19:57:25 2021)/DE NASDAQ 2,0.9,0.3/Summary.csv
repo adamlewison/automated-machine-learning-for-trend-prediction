@@ -1,0 +1,7 @@
+,Value
+best model,"{'model': 'lstm', 'learning_rate': 0.001, 'dropout': 0.0, 'n_hidden': 2, 'hidden_1': 88, 'hidden_2': 11, 'hidden_3': 69, 'hidden_4': 37, 'hidden_5': 58}"
+val mse,1839.2510986328125
+test mse,11475.661
+total time,85.25429058074951
+function calls,180
+iterations,90
