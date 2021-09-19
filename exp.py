@@ -686,7 +686,7 @@ def main():
         global trainset, valset, testset
         trainset, valset, testset = get_data(d)
 
-        pop_sizes = [2, 5, 10, 20]
+        pop_sizes = [45,60]#[2, 5, 10, 20]
         F_arr = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
         Cr_arr = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
         rows = []
