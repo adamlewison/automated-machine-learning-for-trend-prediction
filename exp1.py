@@ -655,7 +655,7 @@ def main():
     global device, num_epochs
 
     datasets = ['NYSE', 'NASDAQ', 'STX40']
-    algos = ['random', 'ps', 'de']
+    algos = ['de']#['random', 'ps', 'de']
     budget = 450
 
     if len(sys.argv) >= 2:
@@ -702,11 +702,13 @@ def main():
                                verbose=False)
                 tracker.export()
             if a == 'de':
-                pop_size = 5
+                pop_size = 20
                 iters = math.floor(budget / pop_size)
                 tracker = PerformanceTracker(tracker_name, pop_size=pop_size)
                 de = DE(
                     pop_size=pop_size,
+                    F=0.9,
+                    CR=0.45,
                     sampling=get_sampling("int_random"),
                     eliminate_duplicates=True,
                 )
