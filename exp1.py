@@ -649,7 +649,7 @@ valset = None
 testset = None
 tracker = None
 device = None
-num_epochs = 20
+num_epochs = 50
 experiment_start_time = time.ctime()
 
 def main():
