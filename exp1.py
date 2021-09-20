@@ -649,7 +649,7 @@ valset = None
 testset = None
 tracker = None
 device = None
-num_epochs = 10
+num_epochs = 20
 experiment_start_time = time.ctime()
 
 def main():
@@ -657,7 +657,7 @@ def main():
 
     datasets = ['NYSE', 'NASDAQ', 'STX40']
     algos = ['random', 'ps', 'de']
-    budget = 450
+    budget = 540
 
     if len(sys.argv) >= 2:
         if sys.argv[1] != 'all':
