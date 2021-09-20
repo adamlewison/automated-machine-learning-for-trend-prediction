@@ -396,12 +396,12 @@ n_hidden = [1, 2, 3, 4, 5]
 optimizers = ['sgd']
 num_epochs = [25, 50, 75]
 
-lower_bounds = [0, 0, 0, 1, 2, 2, 2, 2, 2, 1]
+lower_bounds = [0, 0, 0, 1, 2, 2, 2, 2, 2, 2]
 upper_bounds = [
     len(models) - 1,
     len(learning_rates) - 1,
     len(dropout_rates) - 1,
-    5, 50, 50, 50, 50, 50, 3
+    5, 50, 50, 50, 50, 50, 5
     # len(optimizers) - 1,
     # len(num_epochs) - 1
 ]
