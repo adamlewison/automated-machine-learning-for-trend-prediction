@@ -279,7 +279,7 @@ def get_data(filename, column_name='Close'):
 
 def build_model(params):
     if params['model'] == models[0]:
-        model = LstmModel(2, n_hidden=params['n_hidden'], n_layers=params['hidden_1'], dropout=params['dropout'])
+        model = LstmModel(2, n_hidden=params['n_hidden'], n_layers=params['lstm_layers'], dropout=params['dropout'])
     elif params['model'] == models[1]:
         sizes = []
         if params.get('hidden_1') > 0:
@@ -396,12 +396,12 @@ n_hidden = [1, 2, 3, 4, 5]
 optimizers = ['sgd']
 num_epochs = [25, 50, 75]
 
-lower_bounds = [0, 0, 0, 1, 4, 4, 4, 4, 4]
+lower_bounds = [0, 0, 0, 1, 2, 2, 2, 2, 2, 1]
 upper_bounds = [
     len(models) - 1,
     len(learning_rates) - 1,
     len(dropout_rates) - 1,
-    5, 100, 100, 100, 100, 100,
+    5, 50, 50, 50, 50, 50, 3
     # len(optimizers) - 1,
     # len(num_epochs) - 1
 ]
@@ -446,6 +446,7 @@ def params_list_to_dict(params):
     new_params['hidden_3'] = params[6] if len(params) > 6 else 0
     new_params['hidden_4'] = params[7] if len(params) > 7 else 0
     new_params['hidden_5'] = params[8] if len(params) > 8 else 0
+    new_params['lstm_layers'] = params[9] if len(params) > 9 else 2
 
     return new_params
 
@@ -648,14 +649,14 @@ valset = None
 testset = None
 tracker = None
 device = None
-num_epochs = 5
+num_epochs = 10
 experiment_start_time = time.ctime()
 
 def main():
     global device, num_epochs
 
     datasets = ['NYSE', 'NASDAQ', 'STX40']
-    algos = ['de']#['random', 'ps', 'de']
+    algos = ['random', 'ps', 'de']
     budget = 450
 
     if len(sys.argv) >= 2:
