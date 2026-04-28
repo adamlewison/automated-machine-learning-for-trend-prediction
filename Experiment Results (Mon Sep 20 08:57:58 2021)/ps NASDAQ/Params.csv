@@ -1,7 +1,0 @@
-,model,learning_rate,dropout,n_hidden,hidden_1,hidden_2,hidden_3,hidden_4,hidden_5,lstm_layers
-0,lstm,0.1,0.1,4,3,19,44,35,35,1
-1,lstm,0.1,0.1,4,3,19,44,35,35,1
-2,lstm,0.1,0.0,4,3,19,44,35,35,1
-3,lstm,0.1,0.0,4,3,19,44,35,32,1
-4,lstm,0.1,0.0,3,3,19,44,35,32,1
-5,lstm,0.1,0.0,4,3,19,44,35,32,1

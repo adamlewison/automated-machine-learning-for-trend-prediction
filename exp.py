@@ -1,43 +1,34 @@
 import math
+import random
+import sys
+import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import seaborn as sns
-import time
-from pathlib import Path
-
-import random
 
 from scipy import stats as sp
 from pylab import rcParams
 from matplotlib import rc
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 import torch
 import torch.nn as nn
-import torch.autograd as autograd
 import torch.nn.functional as F
 import torch.optim as optim
 
 from torch.utils.data import Dataset, DataLoader
-from torch.autograd import Variable
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 
-from pathlib import Path
-
-from pymoo.algorithms.so_genetic_algorithm import GA
-from pymoo.algorithms.so_pso import PSO
-from pymoo.factory import get_crossover, get_mutation, get_sampling
+from pymoo.algorithms.soo.nongrad.de import DE
+from pymoo.operators.sampling.rnd import IntegerRandomSampling
 from pymoo.optimize import minimize
-from pymoo.model.problem import Problem
-from pymoo.algorithms.so_cmaes import CMAES
-from pymoo.algorithms.so_de import DE
-from pymoo.algorithms.so_pattern_search import PatternSearch
-import sys
+from pymoo.core.problem import Problem
 # %%
 
 
@@ -111,28 +102,27 @@ def create_sequences(input_data: pd.DataFrame, target_column, sequence_length, t
 
 
 def abline(slope, intercept, length):
-    """Plot a line from slope and intercept"""
+    """Plot a line from slope and intercept."""
     axes = plt.gca()
-    x_vals = np.array()
+    x_vals = np.array(axes.get_xlim())
     y_vals = intercept + slope * x_vals
     plt.plot(x_vals, y_vals, '--')
 
 
 def plot_trends(trends, y_0):
-    axes = plt.gca()
-    v_vals, y_vals = [], []
-    trends = trends.iloc()
+    """Plot piecewise linear trend segments."""
+    x_vals, y_vals = [], []
+    intercept = y_0
+    x_start = 0
 
-    x_start = axes.get_xlim()[0]
-    x_finish = trends[0]['Length']
-
-    for trend in trends:
-        x_vals = np.array(x_start, x_finish)
-
-        y_vals = intercept + trend['Slope'] * x_vals
-        intercept = y_vals[-1]
-        x_start = trend['Length'] + 1
-        x_finish = x_start
+    for _, trend in trends.iterrows():
+        x_finish = x_start + trend['Length']
+        seg_x = np.array([x_start, x_finish])
+        seg_y = intercept + trend['Slope'] * seg_x
+        intercept = seg_y[-1]
+        x_start = x_finish + 1
+        x_vals.extend(seg_x)
+        y_vals.extend(seg_y)
 
     plt.plot(x_vals, y_vals, '--')
 
@@ -220,7 +210,7 @@ def get_data(filename, column_name='Close'):
             }
             index.append((row.Date - df.Date[0]).days)
             rows.append(row_data)
-        except:
+        except (ValueError, TypeError):
             pass
 
     features_df = pd.DataFrame(rows, index=index)
@@ -428,7 +418,6 @@ params = {
 
 
 def params_list_to_dict(params):
-    print("Params in:", params)
     if isinstance(params, dict):
         return params
 
@@ -635,7 +624,6 @@ class CASH(Problem):
         super().__init__(n_var=len(lower_bounds), n_obj=1, xl=lower_bounds, xu=upper_bounds, type_var=int)
 
     def _evaluate(self, x, out, *args, **kwargs):
-        print(x.shape[0])
         fs = []
         for i in range(x.shape[0]):
             fs.append(train(params_list_to_dict(x[i])))
@@ -678,7 +666,7 @@ def main():
     if cuda_off:
         device = torch.device("cpu")
     else:
-        device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     iterations = 1
 
@@ -703,7 +691,7 @@ def main():
                         pop_size=pop_size,
                         CR=CR,
                         F=F,
-                        sampling=get_sampling("int_random"),
+                        sampling=IntegerRandomSampling(),
                         eliminate_duplicates=True,
                     )
                     res = minimize(

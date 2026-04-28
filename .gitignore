@@ -128,3 +128,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 /.details.md
+
+# IDE
+.idea/
+.vscode/
+
+# Experiment outputs
+Experiment Results*/
+results/
+storage/

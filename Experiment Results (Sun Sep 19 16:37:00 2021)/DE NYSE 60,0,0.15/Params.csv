@@ -1,4 +1,0 @@
-,model,learning_rate,dropout,n_hidden,hidden_1,hidden_2,hidden_3,hidden_4,hidden_5
-0,mlp,0.0001,0.0,2,88,85,56,88,96
-1,lstm,0.1,0.5,4,53,95,60,91,17
-2,lstm,0.1,0.2,4,58,5,10,97,59

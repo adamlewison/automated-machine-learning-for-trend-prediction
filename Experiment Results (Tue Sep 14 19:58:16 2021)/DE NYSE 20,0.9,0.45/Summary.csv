@@ -1,7 +1,0 @@
-,Value
-best model,"{'model': 'mlp', 'learning_rate': 1e-05, 'dropout': 0.1, 'n_hidden': 2, 'hidden_1': 4, 'hidden_2': 98, 'hidden_3': 58, 'hidden_4': 77, 'hidden_5': 81}"
-val mse,2259.385986328125
-test mse,8630.928
-total time,110.30136108398438
-function calls,180
-iterations,9
