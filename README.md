@@ -1,4 +1,4 @@
-# py-performance
+# AutoML for Trend Prediction
 
 **Combined Algorithm Selection and Hyperparameter Optimisation (CASH) for Neural Network-based Financial Trend Prediction**
 
