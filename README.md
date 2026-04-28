@@ -5,7 +5,7 @@
 [![CI](https://github.com/adamlewison/py-performance/actions/workflows/ci.yml/badge.svg)](https://github.com/adamlewison/py-performance/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
+![Publication](https://projects.cs.uct.ac.za/honsproj/cgi-bin/view/2021/lewison_taljard.zip/files/adam_final.pdf)
 ---
 
 ## Overview
